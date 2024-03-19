@@ -10,10 +10,14 @@ struct Command
 {
 };
 
-void runPipeline(const parsed_input *input)
+// We alreayd know we're in the pipeline here
+void runPipeline(const parsed_input* input)
 {
+    return;
+
     auto inputCount = (int)input->num_inputs;
 
+    // Remember: Single separator
     for (int i = 0; i < inputCount; i++)
     {
         auto currentCommand = input->inputs[i];
@@ -22,10 +26,13 @@ void runPipeline(const parsed_input *input)
         switch (type)
         {
             case INPUT_TYPE_SUBSHELL:
+                // TODO: Implement Later
                 break;
             case INPUT_TYPE_COMMAND:
+                // TODO: Implement Now.
                 break;
             case INPUT_TYPE_PIPELINE:
+                // TODO: Implement Later
                 break;
             default:
             {
@@ -40,8 +47,6 @@ void runPipeline(const parsed_input *input)
             cout << "FORK ERROR" << endl;
             exit(-1);
         }
-
-        pipe();
 
         if (pid == 0)
         {
@@ -63,7 +68,7 @@ int main()
 
     while (inputLine != "quit")
     {
-        parsed_input *ptr = (parsed_input *)malloc(sizeof(parsed_input));
+        parsed_input* ptr = (parsed_input*)malloc(sizeof(parsed_input));
         auto cPtr = const_cast<char *>(inputLine.c_str());
         auto parse_success = parse_line(cPtr, ptr);
 
