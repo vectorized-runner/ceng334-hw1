@@ -19,19 +19,27 @@ int main()
         auto parse_success = parse_line(cPtr, ptr);
 
         if(!parse_success){
-            cout << "Parse error for line: " << inputLine << endl;
+            cout << "PARSE ERROR. LINE: " << inputLine << endl;
+            exit(1);
         }
-        
+
         pretty_print(ptr);
 
         auto inputCount = ptr->num_inputs;
+        if(inputCount <= 0){
+            cout << "UNEXPECTED INPUT COUNT: " << inputCount << endl;
+            exit(1);
+        }
+
+
         auto separator = ptr->separator;
+        
+
+
 
         cout << "InputCount: " << inputCount << endl;
 
-
-        // TODO: Remove
-        cout << "Received Line: " << inputLine << endl;
+        // cout << "Received Line: " << inputLine << endl;
 
         cout << "/> ";
         getline(cin, inputLine);
