@@ -15,7 +15,7 @@ OBJECTS_C = $(SOURCES_C:.c=.o)
 OBJECTS_CPP = $(SOURCES_CPP:.cpp=.o)
 
 # Executable name
-EXECUTABLE = myprogram
+EXECUTABLE = eshell
 
 # Main target
 all: $(EXECUTABLE)

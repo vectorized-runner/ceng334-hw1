@@ -21,6 +21,7 @@ int main() {
         */
 
        cout << "Received Line: " << inputLine << endl;
+       getline(cin, inputLine);
     }
 
     return 0;
