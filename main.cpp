@@ -10,6 +10,13 @@ struct Command
 {
 };
 
+void assert(bool condition, string message){
+    if(!condition){
+        cout << "ASSERTION FAILED: " << message << endl;
+        exit(-1);
+    }
+}
+
 // We alreayd know we're in the pipeline here
 void runPipeline(const parsed_input* input)
 {
@@ -59,6 +66,15 @@ void runPipeline(const parsed_input* input)
     }
 }
 
+void executeSingleCommand(parsed_input* input){
+    assert(input->num_inputs == 1, "numinputs");
+    auto type = input->inputs[0].type;
+    assert(type == INPUT_TYPE_COMMAND, "inputtype");
+
+    // TODO: Execute single command
+    cout << "Exec single command." << endl; 
+}
+
 int main()
 {
     string inputLine;
@@ -72,20 +88,13 @@ int main()
         auto cPtr = const_cast<char *>(inputLine.c_str());
         auto parse_success = parse_line(cPtr, ptr);
 
-        if (!parse_success)
-        {
-            cout << "PARSE ERROR. LINE: " << inputLine << endl;
-            exit(-1);
-        }
+        assert(parse_success, "parse error");
 
         pretty_print(ptr);
 
         auto inputCount = ptr->num_inputs;
-        if (inputCount <= 0)
-        {
-            cout << "UNEXPECTED INPUT COUNT: " << inputCount << endl;
-            exit(-1);
-        }
+
+        assert(inputCount > 0, "inputCount");
 
         auto separator = ptr->separator;
 
@@ -101,14 +110,19 @@ int main()
         }
         case SEPARATOR_SEQ:
             break;
+        case SEPARATOR_NONE:
+        {
+            executeSingleCommand(ptr);
+            break;
+        }
         default:
             {
+                cout << "UNEXPECTED SEPARATOR" << endl;
                 exit(-1);
             }
         }
 
-        cout << "InputCount: " << inputCount << endl;
-
+        // cout << "InputCount: " << inputCount << endl;
         // cout << "Received Line: " << inputLine << endl;
 
         cout << "/> ";
