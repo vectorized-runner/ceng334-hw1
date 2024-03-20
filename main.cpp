@@ -3,6 +3,7 @@
 #include "parser.h"
 #include <sys/types.h>
 #include <unistd.h>
+#include <vector>
 
 using namespace std;
 
@@ -54,44 +55,57 @@ void runProgram(char* args[]){
 // We alreayd know we're in the pipeline here
 void runPipeline(const parsed_input* input)
 {
+    vector<pid_t> childPids;
     auto inputCount = (int)input->num_inputs;
 
-    // Remember: Single separator
+    int pipeCount = inputCount - 1;
+    int* pipeWriteFds = new int[pipeCount];
+    int* pipeReadFds = new int[pipeCount];
+
+    // Example: A | B | C
+    // F1: OG/A, F2: OG/B, F3: OG/C (Requires 3 fork)
+    // P1: A->B, P2: B->C (Requires 2 pipe)
     for (int i = 0; i < inputCount; i++)
     {
         auto currentCommand = input->inputs[i];
         auto type = currentCommand.type;
-
-        switch (type)
-        {
-            case INPUT_TYPE_SUBSHELL:
-                // TODO: Implement Later
-                break;
-            case INPUT_TYPE_COMMAND:
-                // TODO: Implement Now.
-                break;
-            case INPUT_TYPE_PIPELINE:
-                // TODO: Implement Later
-                break;
-            default:
-            {
-                cout << "COMMAND TYPE ERROR" << endl;
-                exit(-1);
-            }
-        }
-
-
+        assert(type == INPUT_TYPE_COMMAND, "unexpected input");
+  
         bool isChild;
-        pid_t pid;
-        fork(isChild, pid);
+        pid_t childPid;
+        fork(isChild, childPid);
+
+        if(i != inputCount - 1){
+            pipe(pipeReadFds[i], pipeWriteFds[i]);
+        }
 
         if(isChild){
-            cout << "Running on Child" << endl;
-            exit(0);
+            // Redirect A -> B, B -> C, Run A, B, C
+            // Notice program a doesn't continue here
+
+            // A writes to B
+            // B writes to C
+            redirectStdout(pipeWriteFds[i]);
+
+            if(i != 0){
+                // B listens from A
+                // C listens from B
+                redirectStdin(pipeReadFds[i - 1]);
+            }
+
+            auto programArgs = currentCommand.data.cmd.args;
+            runProgram(programArgs);
         } else{
-            cout << "Running on Parent" << endl;
-            exit(0);
+            // OG Process
+            childPids.push_back(childPid);
         }
+
+        auto childCount = childPids.size();
+        for(int i = 0; i < childCount; i++){
+            waitForChildProcess(childPids[i]);
+        }
+
+        cout << "Hell yeah." << endl;     
     }
 }
 
