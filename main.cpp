@@ -6,10 +6,6 @@
 
 using namespace std;
 
-struct Command
-{
-};
-
 void assert(bool condition, string message){
     if(!condition){
         cout << "ASSERTION FAILED: " << message << endl;
@@ -38,7 +34,12 @@ void pipe(int& read, int& write){
 void waitForChildProcess(pid_t pid){
     int status;
     waitpid(pid, &status, 0);
-    assert(WIFEXITED(status), "Child process terminated with an issue.");
+
+    if(WIFEXITED(status)){
+        cout << "Child exited with status: " << WEXITSTATUS(status) << endl;
+    } else if(WIFSIGNALED(status)){
+        cout << "Child exited with signal: " << WTERMSIG(status) << endl;
+    }
 }
 
 void runProgram(char* args[]){
