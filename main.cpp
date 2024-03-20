@@ -116,11 +116,16 @@ void runPipeline(const parsed_input* input)
                 redirectStdin(pipeReadFds[i - 1]);
             }
 
+            // For any process, we need to close the write-ends that's been created so far,
+            // Otherwise the child process can't detect EOF
+            for(int x = i - 1; x >= 0; x--){
+                close(pipeWriteFds[x]);
+            }
+
             // A writes to B
             // B writes to C
             if(i != inputCount - 1){
                 // cout << "redirect stdout: " << i << endl;
-                close(pipeReadFds[i]);
                 redirectStdout(pipeWriteFds[i]);
             }
 
@@ -136,10 +141,9 @@ void runPipeline(const parsed_input* input)
         }       
     }
 
-    // Close all pipes on OG program (don't use it) -- PREVENTS NOT RECEIVING EOF ON CHILDREN
+    // Close all write ends - otherwise can't detect EOF
     for(int i = 0; i < pipeCount; i++){
         closeFile(pipeWriteFds[i]);
-        closeFile(pipeReadFds[i]);
     }
 
     auto childCount = (int)childPids.size();
