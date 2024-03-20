@@ -35,8 +35,10 @@ void waitForChildProcess(pid_t pid){
     int status;
     waitpid(pid, &status, 0);
 
-    if(WIFEXITED(status) < 0){
-        cout << "Child exited with status: " << WEXITSTATUS(status) << endl;
+    if(WIFEXITED(status)){
+        if(WEXITSTATUS(status) < 0){
+            cout << "Child exited with ERROR status: " << WEXITSTATUS(status) << endl;
+        }
     } else if(WIFSIGNALED(status)){
         cout << "Child exited with signal: " << WTERMSIG(status) << endl;
     }
