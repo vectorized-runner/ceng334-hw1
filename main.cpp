@@ -30,7 +30,7 @@ void fork(bool& isChild, pid_t& childPid){
 void pipe(int& read, int& write){
     int fd[2];
     int result = pipe(fd);
-    assert(result > 0, "pipe error");
+    assert(result >= 0, "pipe error");
     read = fd[0];
     write = fd[1];
 }
@@ -92,6 +92,23 @@ void runPipeline(const parsed_input* input)
     }
 }
 
+void closeFile(int fd){
+    auto result = close(fd);
+    assert(result >= 0, "close error");
+}
+
+void redirectStdout(int writeFd){
+    auto result = dup2(writeFd, STDOUT_FILENO);
+    assert(result >= 0 , "dup error");
+    closeFile(writeFd);
+}
+
+void redirectStdin(int readFd){
+    auto result = dup2(readFd, STDIN_FILENO);
+    assert(result >= 0 , "dup error");
+    closeFile(readFd);
+}
+
 void runSingleCommand(parsed_input* input){
     assert(input->num_inputs == 1, "numinputs");
     auto type = input->inputs[0].type;
@@ -107,12 +124,16 @@ void runSingleCommand(parsed_input* input){
 
     if(isChild){
         auto args = input->inputs[0].data.cmd.args;
+        
+        // Child writes to the parent
+        closeFile(read);
+        redirectStdout(write);
         runProgram(args);
-
-        // runProgram();
         cout << "Running command on child!" << endl;
         exit(0);
     } else{
+        closeFile(write);
+        redirectStdin(read);
         waitForChildProcess(childPid);
         cout << "Running finished on parent!" << endl;
     }
