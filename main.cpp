@@ -17,10 +17,27 @@ void assert(bool condition, string message){
     }
 }
 
-void Fork(bool& isChild){
+void fork(bool& isChild, pid_t& childPid){
     auto pid = fork();
     assert(pid >= 0, "fork");
     isChild = pid == 0;
+
+    if(!isChild){
+        childPid = pid;
+    }
+}
+
+void waitForChildProcess(pid_t pid){
+    int status;
+    waitpid(pid, &status, 0);
+    assert(WIFEXITED(status), "Child process terminated with an issue.");
+}
+
+void runProgram(char* args[]){
+    execvp(args[0], args);
+
+    // Execvp shouldn't return
+    assert(false, "execvp error");
 }
 
 // We alreayd know we're in the pipeline here
@@ -54,7 +71,8 @@ void runPipeline(const parsed_input* input)
 
 
         bool isChild;
-        Fork(isChild);
+        pid_t pid;
+        fork(isChild, pid);
 
         if(isChild){
             cout << "Running on Child" << endl;
@@ -66,16 +84,26 @@ void runPipeline(const parsed_input* input)
     }
 }
 
-void executeSingleCommand(parsed_input* input){
+void runSingleCommand(parsed_input* input){
     assert(input->num_inputs == 1, "numinputs");
     auto type = input->inputs[0].type;
     assert(type == INPUT_TYPE_COMMAND, "inputtype");
 
-    auto pid = fork();
-    assert(pid >= 0, "fork");
+    bool isChild;
+    pid_t childPid;
+    fork(isChild, childPid);
 
-    // TODO: Execute single command
-    cout << "Exec single command." << endl; 
+    if(isChild){
+        auto args = input->inputs[0].data.cmd.args;
+        runProgram(args);
+
+        // runProgram();
+        cout << "Running command on child!" << endl;
+        exit(0);
+    } else{
+        waitForChildProcess(childPid);
+        cout << "Running finished on parent!" << endl;
+    }
 }
 
 int main()
@@ -115,7 +143,7 @@ int main()
             break;
         case SEPARATOR_NONE:
         {
-            executeSingleCommand(ptr);
+            runSingleCommand(ptr);
             break;
         }
         default:
