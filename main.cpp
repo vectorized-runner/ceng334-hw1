@@ -27,6 +27,14 @@ void fork(bool& isChild, pid_t& childPid){
     }
 }
 
+void pipe(int& read, int& write){
+    int fd[2];
+    int result = pipe(fd);
+    assert(result > 0, "pipe error");
+    read = fd[0];
+    write = fd[1];
+}
+
 void waitForChildProcess(pid_t pid){
     int status;
     waitpid(pid, &status, 0);
@@ -92,6 +100,10 @@ void runSingleCommand(parsed_input* input){
     bool isChild;
     pid_t childPid;
     fork(isChild, childPid);
+
+    int read;
+    int write;
+    pipe(read, write);
 
     if(isChild){
         auto args = input->inputs[0].data.cmd.args;
