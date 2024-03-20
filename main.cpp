@@ -35,7 +35,7 @@ void waitForChildProcess(pid_t pid){
     int status;
     waitpid(pid, &status, 0);
 
-    if(WIFEXITED(status)){
+    if(WIFEXITED(status) < 0){
         cout << "Child exited with status: " << WEXITSTATUS(status) << endl;
     } else if(WIFSIGNALED(status)){
         cout << "Child exited with signal: " << WTERMSIG(status) << endl;
@@ -119,24 +119,13 @@ void runSingleCommand(parsed_input* input){
     pid_t childPid;
     fork(isChild, childPid);
 
-    int read;
-    int write;
-    pipe(read, write);
-
     if(isChild){
         auto args = input->inputs[0].data.cmd.args;
         
-        // Child writes to the parent
-        closeFile(read);
-        redirectStdout(write);
+        // Child process inherits the stdout from parent, no need for redirection
         runProgram(args);
-        cout << "Running command on child!" << endl;
-        exit(0);
     } else{
-        closeFile(write);
-        redirectStdin(read);
         waitForChildProcess(childPid);
-        cout << "Running finished on parent!" << endl;
     }
 }
 
