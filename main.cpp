@@ -133,14 +133,19 @@ void runPipeline(const parsed_input* input)
             cout << "Create Child: " << childPid << endl;
             // OG Process
             childPids.push_back(childPid);
-        }
+        }       
+    }
+
+    // Close all pipes on OG program (don't use it) -- PREVENTS NOT RECEIVING EOF ON CHILDREN
+    for(int i = 0; i < pipeCount; i++){
+        closeFile(pipeWriteFds[i]);
+        closeFile(pipeReadFds[i]);
     }
 
     auto childCount = (int)childPids.size();
     for(int i = 0; i < childCount; i++){
         cout << "Waiting for child..." << childPids[i] << endl;
         waitForChildProcess(childPids[i]);
-        closeFile(pipeWriteFds[i]);
         cout << "One child process exited: " << childPids[i] << endl;
     }
 
