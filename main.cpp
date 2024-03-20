@@ -153,6 +153,9 @@ void runPipeline(const parsed_input* input)
         cout << "One child process exited: " << childPids[i] << endl;
     }
 
+    delete[] pipeWriteFds;
+    delete[] pipeReadFds;
+
     cout << "Hell yeah." << endl;     
 }
 
