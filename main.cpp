@@ -32,6 +32,12 @@ void pipe(int& read, int& write){
     write = fd[1];
 }
 
+
+void closeFile(int fd){
+    auto result = close(fd);
+    assert(result >= 0, "close error");
+}
+
 void waitForChildProcess(pid_t pid){
     int status;
     waitpid(pid, &status, 0);
@@ -43,6 +49,18 @@ void waitForChildProcess(pid_t pid){
     } else if(WIFSIGNALED(status)){
         cout << "Child exited with signal: " << WTERMSIG(status) << endl;
     }
+}
+
+void redirectStdout(int writeFd){
+    auto result = dup2(writeFd, STDOUT_FILENO);
+    assert(result >= 0 , "dup error");
+    closeFile(writeFd);
+}
+
+void redirectStdin(int readFd){
+    auto result = dup2(readFd, STDIN_FILENO);
+    assert(result >= 0 , "dup error");
+    closeFile(readFd);
 }
 
 void runProgram(char* args[]){
@@ -62,6 +80,8 @@ void runPipeline(const parsed_input* input)
     int* pipeWriteFds = new int[pipeCount];
     int* pipeReadFds = new int[pipeCount];
 
+    cout << "InputC" << inputCount << endl;
+
     // Example: A | B | C
     // F1: OG/A, F2: OG/B, F3: OG/C (Requires 3 fork)
     // P1: A->B, P2: B->C (Requires 2 pipe)
@@ -71,59 +91,69 @@ void runPipeline(const parsed_input* input)
         auto type = currentCommand.type;
         assert(type == INPUT_TYPE_COMMAND, "unexpected input");
   
+        if(i != inputCount - 1){
+            cout << "Create pipe at index" << i << endl;
+            pipe(pipeReadFds[i], pipeWriteFds[i]);
+            assert(pipeReadFds[i] > 0, "piperead");
+            assert(pipeWriteFds[i] > 0, "pipewrite");
+        }
+
         bool isChild;
         pid_t childPid;
         fork(isChild, childPid);
 
-        if(i != inputCount - 1){
-            pipe(pipeReadFds[i], pipeWriteFds[i]);
-        }
+        int pipefd[2];
+        pipe(pipefd);
 
         if(isChild){
             // Redirect A -> B, B -> C, Run A, B, C
-            // Notice program a doesn't continue here
-
-            // A writes to B
-            // B writes to C
-            redirectStdout(pipeWriteFds[i]);
-
+   
             if(i != 0){
                 // B listens from A
                 // C listens from B
-                redirectStdin(pipeReadFds[i - 1]);
+                // cout << "redirect stdin: " << (i - 1) << endl;
+                // redirectStdin(pipeReadFds[i - 1]);
+
+                close(pipefd[1]);
+        
+                    // Duplicate the read end of the pipe onto stdin
+                dup2(pipefd[0], STDIN_FILENO);
+        
+                // Close the original read end of the pipe
+                close(pipefd[0]);
+            }
+
+            // A writes to B
+            // B writes to C
+            if(i != inputCount - 1){
+                // cout << "redirect stdout: " << i << endl;
+                // redirectStdout(pipeWriteFds[i]);
+
+
+                close(pipefd[0]);
+                dup2(pipefd[1], STDOUT_FILENO);
+                close(pipefd[1]);
             }
 
             auto programArgs = currentCommand.data.cmd.args;
+            // Notice program a doesn't continue after here
             runProgram(programArgs);
+
+            cout << "Shouldn't reach here" << endl;
         } else{
+            cout << "Create Child: " << childPid << endl;
             // OG Process
             childPids.push_back(childPid);
         }
-
-        auto childCount = childPids.size();
-        for(int i = 0; i < childCount; i++){
-            waitForChildProcess(childPids[i]);
-        }
-
-        cout << "Hell yeah." << endl;     
     }
-}
 
-void closeFile(int fd){
-    auto result = close(fd);
-    assert(result >= 0, "close error");
-}
+    auto childCount = (int)childPids.size();
+    for(int i = 0; i < childCount; i++){
+        waitForChildProcess(childPids[i]);
+        cout << "One child process exited: " << childPids[i] << endl;
+    }
 
-void redirectStdout(int writeFd){
-    auto result = dup2(writeFd, STDOUT_FILENO);
-    assert(result >= 0 , "dup error");
-    closeFile(writeFd);
-}
-
-void redirectStdin(int readFd){
-    auto result = dup2(readFd, STDIN_FILENO);
-    assert(result >= 0 , "dup error");
-    closeFile(readFd);
+    cout << "Hell yeah." << endl;     
 }
 
 void runSingleCommand(parsed_input* input){
