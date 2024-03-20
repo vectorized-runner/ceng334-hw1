@@ -102,37 +102,26 @@ void runPipeline(const parsed_input* input)
         pid_t childPid;
         fork(isChild, childPid);
 
-        int pipefd[2];
-        pipe(pipefd);
-
         if(isChild){
             // Redirect A -> B, B -> C, Run A, B, C
    
             if(i != 0){
                 // B listens from A
                 // C listens from B
+                // char* buf = new char[500];
+                // read(pipeReadFds[i - 1], buf, 500);
+                // cout << "reading from parent: " << buf << endl;
                 // cout << "redirect stdin: " << (i - 1) << endl;
-                // redirectStdin(pipeReadFds[i - 1]);
-
-                close(pipefd[1]);
-        
-                    // Duplicate the read end of the pipe onto stdin
-                dup2(pipefd[0], STDIN_FILENO);
-        
-                // Close the original read end of the pipe
-                close(pipefd[0]);
+                close(pipeWriteFds[i - 1]);
+                redirectStdin(pipeReadFds[i - 1]);
             }
 
             // A writes to B
             // B writes to C
             if(i != inputCount - 1){
                 // cout << "redirect stdout: " << i << endl;
-                // redirectStdout(pipeWriteFds[i]);
-
-
-                close(pipefd[0]);
-                dup2(pipefd[1], STDOUT_FILENO);
-                close(pipefd[1]);
+                close(pipeReadFds[i]);
+                redirectStdout(pipeWriteFds[i]);
             }
 
             auto programArgs = currentCommand.data.cmd.args;
@@ -149,7 +138,9 @@ void runPipeline(const parsed_input* input)
 
     auto childCount = (int)childPids.size();
     for(int i = 0; i < childCount; i++){
+        cout << "Waiting for child..." << childPids[i] << endl;
         waitForChildProcess(childPids[i]);
+        closeFile(pipeWriteFds[i]);
         cout << "One child process exited: " << childPids[i] << endl;
     }
 
@@ -184,6 +175,13 @@ int main()
 
     while (inputLine != "quit")
     {
+        if(inputLine.empty()){
+            getline(cin, inputLine);
+            continue;
+        }
+
+        cout << "Running For Input: '" << inputLine << "'" << endl;
+
         parsed_input* ptr = (parsed_input*)malloc(sizeof(parsed_input));
         auto cPtr = const_cast<char *>(inputLine.c_str());
         auto parse_success = parse_line(cPtr, ptr);
