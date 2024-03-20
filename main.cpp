@@ -17,11 +17,15 @@ void assert(bool condition, string message){
     }
 }
 
+void Fork(bool& isChild){
+    auto pid = fork();
+    assert(pid >= 0, "fork");
+    isChild = pid == 0;
+}
+
 // We alreayd know we're in the pipeline here
 void runPipeline(const parsed_input* input)
 {
-    return;
-
     auto inputCount = (int)input->num_inputs;
 
     // Remember: Single separator
@@ -48,20 +52,16 @@ void runPipeline(const parsed_input* input)
             }
         }
 
-        auto pid = fork();
-        if (pid < 0)
-        {
-            cout << "FORK ERROR" << endl;
-            exit(-1);
-        }
 
-        if (pid == 0)
-        {
-            // Child
-        }
-        else
-        {
-            // Parent
+        bool isChild;
+        Fork(isChild);
+
+        if(isChild){
+            cout << "Running on Child" << endl;
+            exit(0);
+        } else{
+            cout << "Running on Parent" << endl;
+            exit(0);
         }
     }
 }
@@ -70,6 +70,9 @@ void executeSingleCommand(parsed_input* input){
     assert(input->num_inputs == 1, "numinputs");
     auto type = input->inputs[0].type;
     assert(type == INPUT_TYPE_COMMAND, "inputtype");
+
+    auto pid = fork();
+    assert(pid >= 0, "fork");
 
     // TODO: Execute single command
     cout << "Exec single command." << endl; 
