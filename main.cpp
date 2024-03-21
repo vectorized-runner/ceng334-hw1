@@ -219,7 +219,8 @@ void runParallel(parsed_input* input){
                 auto args = input->inputs[i].data.cmd.args;
                 runProgram(args);
             } else if(type == INPUT_TYPE_PIPELINE){
-                // TODO;
+                runPipeline(input->inputs[i].data.pline);
+                exit(0);
             } else{
                 assert(false, "inputtype-runpara");
             }
