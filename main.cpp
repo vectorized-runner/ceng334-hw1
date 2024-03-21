@@ -171,9 +171,15 @@ void runParallel(parsed_input* input){
         fork(isChild, childPid);
 
         if(isChild){
-            assert(input->inputs[i].type == INPUT_TYPE_COMMAND, "inputtype-runpara");
-            auto args = input->inputs[i].data.cmd.args;
-            runProgram(args);
+            auto type = input->inputs[i].type;
+            if(type == INPUT_TYPE_COMMAND){
+                auto args = input->inputs[i].data.cmd.args;
+                runProgram(args);
+            } else if(type == INPUT_TYPE_PIPELINE){
+                // TODO;
+            } else{
+                assert(false, "inputtype-runpara");
+            }
         } else{
             childPids.push_back(childPid);
         }
