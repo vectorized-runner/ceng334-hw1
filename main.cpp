@@ -158,6 +158,8 @@ void runPipeline(const pipeline& input)
                 // read(pipeReadFds[i - 1], buf, 500);
                 // cout << "reading from parent: " << buf << endl;
                 // cout << "redirect stdin: " << (i - 1) << endl;
+                
+                // TODO: Close fails here. Fix! [Using closeFile fails]
                 close(pipeWriteFds[i - 1]);
                 redirectStdin(pipeReadFds[i - 1]);
             }
@@ -165,6 +167,7 @@ void runPipeline(const pipeline& input)
             // For any process, we need to close the write-ends that's been created so far,
             // Otherwise the child process can't detect EOF
             for(int x = i - 1; x >= 0; x--){
+                // TODO: Close fails here. Fix! [Using closeFile fails]
                 close(pipeWriteFds[x]);
             }
 
@@ -272,7 +275,7 @@ void runSequential(parsed_input* input){
 void runSingleCommand(parsed_input* input){
     assert(input->num_inputs == 1, "numinputs");
     auto type = input->inputs[0].type;
-    assert(type == INPUT_TYPE_COMMAND, "inputtype");
+    assert(type == INPUT_TYPE_COMMAND, "inputtype-singlecommand");
 
     bool isChild;
     pid_t childPid;
