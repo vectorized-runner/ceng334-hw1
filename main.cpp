@@ -7,6 +7,9 @@
 
 using namespace std;
 
+void runForInput(char* str);
+void runSubshell(char* str);
+
 void assert(bool condition, string message){
     if(!condition){
         cout << "ASSERTION FAILED: " << message << endl;
@@ -289,8 +292,6 @@ void runSingleCommand(parsed_input* input){
     }
 }
 
-void runForInput(char* str);
-
 void runNoSeparator(parsed_input* input){
     assert(input->num_inputs == 1, "numinputs");
 
@@ -358,6 +359,21 @@ void runForInput(char* str){
             exit(-1);
         }
     }
+}
+
+void runSubshell(char* str){
+    bool isChild;
+    pid_t childPid;
+    fork(isChild, childPid);
+
+    if(isChild){
+        runForInput(str);
+        exit(0);
+    } else{
+        waitForChildProcess(childPid);
+    }
+
+    cout << "Running subshell is done!" << endl;
 }
 
 int main()
