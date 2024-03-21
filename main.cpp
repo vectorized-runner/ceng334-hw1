@@ -80,22 +80,17 @@ void runPipeline(parsed_input* input)
     int* pipeWriteFds = new int[pipeCount];
     int* pipeReadFds = new int[pipeCount];
 
-    cout << "InputC" << inputCount << endl;
-
     // Example: A | B | C
     // F1: OG/A, F2: OG/B, F3: OG/C (Requires 3 fork)
     // P1: A->B, P2: B->C (Requires 2 pipe)
     for (int i = 0; i < inputCount; i++)
     {
         auto currentCommand = input->inputs[i];
-        auto type = currentCommand.type;
-        assert(type == INPUT_TYPE_COMMAND, "unexpected input");
+        auto currentCommand = input.commands[i];
   
         if(i != inputCount - 1){
-            cout << "Create pipe at index" << i << endl;
+            // cout << "Create pipe at index" << i << endl;
             pipe(pipeReadFds[i], pipeWriteFds[i]);
-            assert(pipeReadFds[i] > 0, "piperead");
-            assert(pipeWriteFds[i] > 0, "pipewrite");
         }
 
         bool isChild;
@@ -132,10 +127,8 @@ void runPipeline(parsed_input* input)
             auto programArgs = currentCommand.data.cmd.args;
             // Notice program a doesn't continue after here
             runProgram(programArgs);
-
-            cout << "Shouldn't reach here" << endl;
         } else{
-            cout << "Create Child: " << childPid << endl;
+            // cout << "Create Child: " << childPid << endl;
             // OG Process
             childPids.push_back(childPid);
         }       
@@ -148,9 +141,9 @@ void runPipeline(parsed_input* input)
 
     auto childCount = (int)childPids.size();
     for(int i = 0; i < childCount; i++){
-        cout << "Waiting for child..." << childPids[i] << endl;
+        // cout << "Waiting for child..." << childPids[i] << endl;
         waitForChildProcess(childPids[i]);
-        cout << "One child process exited: " << childPids[i] << endl;
+        // cout << "One child process exited: " << childPids[i] << endl;
     }
 
     delete[] pipeWriteFds;
