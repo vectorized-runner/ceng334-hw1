@@ -85,8 +85,7 @@ void runPipeline(parsed_input* input)
     // P1: A->B, P2: B->C (Requires 2 pipe)
     for (int i = 0; i < inputCount; i++)
     {
-        auto currentCommand = input->inputs[i];
-        auto currentCommand = input.commands[i];
+        auto currentCommand = input->inputs[i].data.cmd;
   
         if(i != inputCount - 1){
             // cout << "Create pipe at index" << i << endl;
@@ -124,7 +123,7 @@ void runPipeline(parsed_input* input)
                 redirectStdout(pipeWriteFds[i]);
             }
 
-            auto programArgs = currentCommand.data.cmd.args;
+            auto programArgs = currentCommand.args;
             // Notice program a doesn't continue after here
             runProgram(programArgs);
         } else{
