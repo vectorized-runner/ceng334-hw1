@@ -70,11 +70,77 @@ void runProgram(char* args[]){
     assert(false, "execvp error");
 }
 
+/*
+PipelineArgs getPipelineArgs(parsed_input* parsed_input){
+    assert(parsed_input->separator == SEPARATOR_PIPE, "getpipelineargs-1");
+    auto count = (int)parsed_input->num_inputs;
+    PipelineArgs result;
+
+    for(int i = 0; i < count; i++){
+        auto type = parsed_input->inputs[i].type;
+        assert(type == INPUT_TYPE_COMMAND, "getpipelineargs-2");
+        auto asd = parsed_input->inputs[i].data.pline
+    }
+}
+*/
+
+pipeline getPipeline(parsed_input* parsed_input){
+    assert(parsed_input->separator == SEPARATOR_PIPE, "getpipelineargs-1");
+    auto count = (int)parsed_input->num_inputs;
+    pipeline result;
+    result.num_commands = count;
+
+    for(int i = 0; i < count; i++){
+        auto type = parsed_input->inputs[i].type;
+        assert(type == INPUT_TYPE_COMMAND, "getpipelineargs-2");
+
+        cout << "lezgo" << endl;
+
+        for(int x = 0; x < MAX_ARGS; x++){
+            cout << "a" << endl;
+            auto& src = result.commands[i].args[x];
+            cout << "b" << endl;
+
+            auto& dst = parsed_input->inputs[i].data.cmd.args[x];
+
+            if(dst == NULL){
+                break;
+                cout << "dst is null, finally" << endl;
+            }
+
+            cout << "first byte is " << dst[0] << endl;
+
+            cout << "c" << endl;
+            cout << "dst is: " << dst << endl;
+
+            auto len = strlen(dst) + 1;
+
+            cout << "xd" << endl;
+
+            if(len == 0){
+                cout << "semebreak" << endl;
+                break;
+            }
+
+            cout << "e" << x << endl;
+            src = new char[len];
+
+            cout << "f" << endl;
+            memcpy(dst, src, len);
+
+            cout << "copy res:" << src << endl;
+            cout << "check:" << result.commands[i].args[x];
+        }
+    }
+
+    return result;
+}
+
 // We alreayd know we're in the pipeline here
-void runPipeline(parsed_input* input)
+void runPipeline(const pipeline& input)
 {
     vector<pid_t> childPids;
-    auto inputCount = (int)input->num_inputs;
+    auto inputCount = (int)input.num_commands;
 
     int pipeCount = inputCount - 1;
     int* pipeWriteFds = new int[pipeCount];
@@ -85,7 +151,8 @@ void runPipeline(parsed_input* input)
     // P1: A->B, P2: B->C (Requires 2 pipe)
     for (int i = 0; i < inputCount; i++)
     {
-        auto currentCommand = input->inputs[i].data.cmd;
+        cout << "read command at index" << i << endl;
+        auto currentCommand = input.commands[i];
   
         if(i != inputCount - 1){
             // cout << "Create pipe at index" << i << endl;
@@ -99,6 +166,30 @@ void runPipeline(parsed_input* input)
         if(isChild){
             // Redirect A -> B, B -> C, Run A, B, C
    
+            auto programArgs = currentCommand.args;
+            auto z = 0;
+            cout << programArgs[0] << endl;
+
+            /*
+            if(i == 0) {
+                programArgs[0] = "ls";
+                for(int i = 1; i < MAX_ARGS; i++){
+                    programArgs[i] = NULL;
+                }
+            } else{
+                programArgs[0] = "wc";
+                programArgs[1] = "-l";
+                for(int i = 2; i < MAX_ARGS; i++){
+                    programArgs[i] = NULL;
+                }
+            }
+            */
+
+            while(programArgs[z] != NULL){
+                cout << "ARG " << z << " : " << programArgs[z] << endl;
+                z++;
+            }
+
             if(i != 0){
                 // B listens from A
                 // C listens from B
@@ -123,7 +214,6 @@ void runPipeline(parsed_input* input)
                 redirectStdout(pipeWriteFds[i]);
             }
 
-            auto programArgs = currentCommand.args;
             // Notice program a doesn't continue after here
             runProgram(programArgs);
         } else{
@@ -196,9 +286,16 @@ void runSequential(parsed_input* input){
         fork(isChild, childPid);
 
         if(isChild){
-            assert(input->inputs[i].type == INPUT_TYPE_COMMAND, "inputtype-runseq");
-            auto args = input->inputs[i].data.cmd.args;
-            runProgram(args);
+            auto type = input->inputs[i].type;
+            if(type == INPUT_TYPE_COMMAND){
+                auto args = input->inputs[i].data.cmd.args;
+                runProgram(args);
+            } else if(type == INPUT_TYPE_PIPELINE){
+                // If I just call runpipeline, will it work?
+                //runPipeline();
+            } else{
+                assert(false, "inputtype-seq");
+            }
         } else{
             waitForChildProcess(childPid);
         }
@@ -264,7 +361,7 @@ int main()
         }
         case SEPARATOR_PIPE:
         {
-            runPipeline(ptr);
+            runPipeline(getPipeline(ptr));
             break;
         }
         case SEPARATOR_SEQ:
