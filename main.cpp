@@ -254,7 +254,9 @@ void runSequential(parsed_input* input){
                 auto args = input->inputs[i].data.cmd.args;
                 runProgram(args);
             } else if(type == INPUT_TYPE_PIPELINE){
+                // Notice: It runs the pipeline as the main program, we need to kill it.
                 runPipeline(input->inputs[i].data.pline);
+                exit(0);
             } else{
                 assert(false, "inputtype-seq");
             }
@@ -343,9 +345,14 @@ int main()
             }
         }
 
+        // cout << "Expecting Input." << endl;
+
         cout << "/> ";
         getline(cin, inputLine);
+
+        // cout << "getline received next input: " << inputLine << endl;
     }
 
+    // cout << "quitting..." << endl;
     return 0;
 }
