@@ -156,16 +156,21 @@ void runPipeline(parsed_input* input)
     delete[] pipeWriteFds;
     delete[] pipeReadFds;
 
-    cout << "Pipeline run done!" << endl;     
+    // cout << "Pipeline run done!" << endl;     
+}
+
+void runParallel(parsed_input* input){
+    auto inputCount = (int)input->num_inputs;
+    assert(inputCount > 1, "numinputs");
+
+
 }
 
 void runSequential(parsed_input* input){
-    cout << "Please handle running me!" << endl;
     // Example: A ; B ; C
     // Forking: OG/A, OG/B, OG/C (3 times)
-
     auto inputCount = (int)input->num_inputs;
-    assert(input->num_inputs > 1, "numinputs");
+    assert(inputCount > 1, "numinputs");
 
     for(int i = 0; i < inputCount; i++){
         bool isChild;
@@ -181,7 +186,7 @@ void runSequential(parsed_input* input){
         }
     }
 
-    cout << "Sequential Run Done!" << endl;
+    // cout << "Sequential Run Done!" << endl;
 }
 
 void runSingleCommand(parsed_input* input){
@@ -195,7 +200,6 @@ void runSingleCommand(parsed_input* input){
 
     if(isChild){
         auto args = input->inputs[0].data.cmd.args;
-        
         // Child process inherits the stdout from parent, no need for redirection
         runProgram(args);
     } else{
@@ -233,11 +237,13 @@ int main()
 
         auto separator = ptr->separator;
 
-        // TODO:
         switch (separator)
         {
         case SEPARATOR_PARA:
+        {
+            runParallel(ptr);
             break;
+        }
         case SEPARATOR_PIPE:
         {
             runPipeline(ptr);
@@ -259,9 +265,6 @@ int main()
                 exit(-1);
             }
         }
-
-        // cout << "InputCount: " << inputCount << endl;
-        // cout << "Received Line: " << inputLine << endl;
 
         cout << "/> ";
         getline(cin, inputLine);
