@@ -299,10 +299,6 @@ void runNoSeparator(parsed_input* input){
     if(type == INPUT_TYPE_COMMAND){
         runSingleCommand(input);
     } else if(type == INPUT_TYPE_SUBSHELL){
-        cout << "ni" << input->num_inputs << endl;
-        cout << "type: " << input->inputs[0].type << endl;
-        cout << "subshell: '" << input->inputs[0].data.subshell << "'" << endl;
-        cout << "Implement me" << endl;
         auto& subshell = input->inputs[0].data.subshell;
         runForInput(subshell);
     } else{
@@ -311,13 +307,6 @@ void runNoSeparator(parsed_input* input){
 }
 
 void runForInput(char* str){
-    // TODO: Create RunSubshell method
-    // Don't forget to exit after
-    // Ensure to try quit after
-    // RunForInput should be called from main.
-    // I could be able to implement this quickly.
-    cout << "runsub" << endl;
-
     parsed_input* ptr = (parsed_input*)malloc(sizeof(parsed_input));
     auto parse_success = parse_line(str, ptr);
 
