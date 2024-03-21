@@ -70,20 +70,6 @@ void runProgram(char* args[]){
     assert(false, "execvp error");
 }
 
-/*
-PipelineArgs getPipelineArgs(parsed_input* parsed_input){
-    assert(parsed_input->separator == SEPARATOR_PIPE, "getpipelineargs-1");
-    auto count = (int)parsed_input->num_inputs;
-    PipelineArgs result;
-
-    for(int i = 0; i < count; i++){
-        auto type = parsed_input->inputs[i].type;
-        assert(type == INPUT_TYPE_COMMAND, "getpipelineargs-2");
-        auto asd = parsed_input->inputs[i].data.pline
-    }
-}
-*/
-
 void copyStringToSource(char*& src, char*& dst){
     if(src == NULL){
         dst = NULL;
@@ -130,7 +116,6 @@ void runPipeline(const pipeline& input)
     // P1: A->B, P2: B->C (Requires 2 pipe)
     for (int i = 0; i < inputCount; i++)
     {
-        cout << "read command at index" << i << endl;
         auto currentCommand = input.commands[i];
   
         if(i != inputCount - 1){
@@ -146,9 +131,6 @@ void runPipeline(const pipeline& input)
             // Redirect A -> B, B -> C, Run A, B, C
    
             auto programArgs = currentCommand.args;
-            auto z = 0;
-            cout << programArgs[0] << endl;
-
             /*
             if(i == 0) {
                 programArgs[0] = "ls";
@@ -162,12 +144,12 @@ void runPipeline(const pipeline& input)
                     programArgs[i] = NULL;
                 }
             }
-            */
-
-            while(programArgs[z] != NULL){
+                 while(programArgs[z] != NULL){
                 cout << "ARG " << z << " : " << programArgs[z] << endl;
                 z++;
             }
+            */
+
 
             if(i != 0){
                 // B listens from A
@@ -217,7 +199,7 @@ void runPipeline(const pipeline& input)
     delete[] pipeWriteFds;
     delete[] pipeReadFds;
 
-    // cout << "Pipeline run done!" << endl;     
+    cout << "Pipeline run done!" << endl;     
 }
 
 void runParallel(parsed_input* input){
@@ -259,6 +241,8 @@ void runSequential(parsed_input* input){
     auto inputCount = (int)input->num_inputs;
     assert(inputCount > 1, "numinputs");
 
+    cout << "Sequential Run started." << endl;
+
     for(int i = 0; i < inputCount; i++){
         bool isChild;
         pid_t childPid;
@@ -270,8 +254,7 @@ void runSequential(parsed_input* input){
                 auto args = input->inputs[i].data.cmd.args;
                 runProgram(args);
             } else if(type == INPUT_TYPE_PIPELINE){
-                // If I just call runpipeline, will it work?
-                //runPipeline();
+                runPipeline(input->inputs[i].data.pline);
             } else{
                 assert(false, "inputtype-seq");
             }
@@ -280,7 +263,7 @@ void runSequential(parsed_input* input){
         }
     }
 
-    // cout << "Sequential Run Done!" << endl;
+    cout << "Sequential Run Done!" << endl;
 }
 
 void runSingleCommand(parsed_input* input){
