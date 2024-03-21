@@ -84,6 +84,17 @@ PipelineArgs getPipelineArgs(parsed_input* parsed_input){
 }
 */
 
+void copyStringToSource(char*& src, char*& dst){
+    if(src == NULL){
+        dst = NULL;
+        return;
+    }
+
+    auto srcLength = strlen(src) + 1;
+    dst = new char[srcLength];
+    memcpy(dst, src, srcLength);
+}
+
 pipeline getPipeline(parsed_input* parsed_input){
     assert(parsed_input->separator == SEPARATOR_PIPE, "getpipelineargs-1");
     auto count = (int)parsed_input->num_inputs;
@@ -97,15 +108,7 @@ pipeline getPipeline(parsed_input* parsed_input){
         for(int x = 0; x < MAX_ARGS; x++){
             auto& src = parsed_input->inputs[i].data.cmd.args[x];
             auto& dst = result.commands[i].args[x];
-
-            if(src == NULL){
-                dst = NULL;
-                continue;
-            }
-
-            auto srcLength = strlen(src) + 1;
-            dst = new char[srcLength];
-            memcpy(dst, src, srcLength);
+            copyStringToSource(src, dst);
         }
     }
 
