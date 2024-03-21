@@ -289,9 +289,7 @@ void runSingleCommand(parsed_input* input){
     }
 }
 
-void runForInput(char* str){
-    cout << "runsub" << endl;
-}
+void runForInput(char* str);
 
 void runNoSeparator(parsed_input* input){
     assert(input->num_inputs == 1, "numinputs");
@@ -311,6 +309,57 @@ void runNoSeparator(parsed_input* input){
     }
 }
 
+void runForInput(char* str){
+    // TODO: Create RunSubshell method
+    // Don't forget to exit after
+    // Ensure to try quit after
+    // RunForInput should be called from main.
+    // I could be able to implement this quickly.
+    cout << "runsub" << endl;
+
+    parsed_input* ptr = (parsed_input*)malloc(sizeof(parsed_input));
+    auto parse_success = parse_line(str, ptr);
+
+    assert(parse_success, "parse error");
+
+    pretty_print(ptr);
+
+    auto inputCount = ptr->num_inputs;
+
+    assert(inputCount > 0, "inputCount");
+
+    auto separator = ptr->separator;
+
+    switch (separator)
+    {
+    case SEPARATOR_PARA:
+    {
+        runParallel(ptr);
+        break;
+    }
+    case SEPARATOR_PIPE:
+    {
+        runPipeline(getPipeline(ptr));
+        break;
+    }
+    case SEPARATOR_SEQ:
+    {
+        runSequential(ptr);
+        break;
+    }
+    case SEPARATOR_NONE:
+    {
+        runNoSeparator(ptr);
+        break;
+    }
+    default:
+        {
+            cout << "UNEXPECTED SEPARATOR" << endl;
+            exit(-1);
+        }
+    }
+}
+
 int main()
 {
     string inputLine;
@@ -327,49 +376,8 @@ int main()
 
         cout << "Running For Input: '" << inputLine << "'" << endl;
 
-        parsed_input* ptr = (parsed_input*)malloc(sizeof(parsed_input));
         auto cPtr = const_cast<char *>(inputLine.c_str());
-        auto parse_success = parse_line(cPtr, ptr);
-
-        assert(parse_success, "parse error");
-
-        pretty_print(ptr);
-
-        auto inputCount = ptr->num_inputs;
-
-        assert(inputCount > 0, "inputCount");
-
-        auto separator = ptr->separator;
-
-        switch (separator)
-        {
-        case SEPARATOR_PARA:
-        {
-            runParallel(ptr);
-            break;
-        }
-        case SEPARATOR_PIPE:
-        {
-            runPipeline(getPipeline(ptr));
-            break;
-        }
-        case SEPARATOR_SEQ:
-        {
-            runSequential(ptr);
-            break;
-        }
-        case SEPARATOR_NONE:
-        {
-            runNoSeparator(ptr);
-            break;
-        }
-        default:
-            {
-                cout << "UNEXPECTED SEPARATOR" << endl;
-                exit(-1);
-            }
-        }
-
+        runForInput(cPtr);
         // cout << "Expecting Input." << endl;
 
         cout << "/> ";
