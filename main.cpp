@@ -94,42 +94,18 @@ pipeline getPipeline(parsed_input* parsed_input){
         auto type = parsed_input->inputs[i].type;
         assert(type == INPUT_TYPE_COMMAND, "getpipelineargs-2");
 
-        cout << "lezgo" << endl;
-
         for(int x = 0; x < MAX_ARGS; x++){
-            cout << "a" << endl;
-            auto& src = result.commands[i].args[x];
-            cout << "b" << endl;
+            auto& src = parsed_input->inputs[i].data.cmd.args[x];
+            auto& dst = result.commands[i].args[x];
 
-            auto& dst = parsed_input->inputs[i].data.cmd.args[x];
-
-            if(dst == NULL){
-                break;
-                cout << "dst is null, finally" << endl;
+            if(src == NULL){
+                dst = NULL;
+                continue;
             }
 
-            cout << "first byte is " << dst[0] << endl;
-
-            cout << "c" << endl;
-            cout << "dst is: " << dst << endl;
-
-            auto len = strlen(dst) + 1;
-
-            cout << "xd" << endl;
-
-            if(len == 0){
-                cout << "semebreak" << endl;
-                break;
-            }
-
-            cout << "e" << x << endl;
-            src = new char[len];
-
-            cout << "f" << endl;
-            memcpy(dst, src, len);
-
-            cout << "copy res:" << src << endl;
-            cout << "check:" << result.commands[i].args[x];
+            auto srcLength = strlen(src) + 1;
+            dst = new char[srcLength];
+            memcpy(dst, src, srcLength);
         }
     }
 
