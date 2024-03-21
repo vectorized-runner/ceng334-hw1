@@ -163,7 +163,6 @@ void runPipeline(const pipeline& input)
                 // cout << "redirect stdin: " << (i - 1) << endl;
                 
                 // TODO: Close fails here. Fix! [Using closeFile fails]
-                close(pipeWriteFds[i - 1]);
                 redirectStdin(pipeReadFds[i - 1]);
             }
 
@@ -171,7 +170,7 @@ void runPipeline(const pipeline& input)
             // Otherwise the child process can't detect EOF
             for(int x = i - 1; x >= 0; x--){
                 // TODO: Close fails here. Fix! [Using closeFile fails]
-                close(pipeWriteFds[x]);
+                closeFile(pipeWriteFds[x]);
             }
 
             // A writes to B
