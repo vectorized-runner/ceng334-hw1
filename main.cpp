@@ -162,8 +162,28 @@ void runPipeline(parsed_input* input)
 void runParallel(parsed_input* input){
     auto inputCount = (int)input->num_inputs;
     assert(inputCount > 1, "numinputs");
+    
+    vector<pid_t> childPids;
 
+    for(int i = 0; i < inputCount; i++){
+        bool isChild;
+        pid_t childPid;
+        fork(isChild, childPid);
 
+        if(isChild){
+            assert(input->inputs[i].type == INPUT_TYPE_COMMAND, "inputtype-runpara");
+            auto args = input->inputs[i].data.cmd.args;
+            runProgram(args);
+        } else{
+            childPids.push_back(childPid);
+        }
+    }
+
+    for(int i = 0; i < inputCount; i++){
+        waitForChildProcess(childPids[i]);
+    }
+
+    cout << "Parallel Run Done." << endl;
 }
 
 void runSequential(parsed_input* input){
