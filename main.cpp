@@ -273,13 +273,12 @@ void runSequential(parsed_input* input){
 }
 
 void runSingleCommand(parsed_input* input){
-    assert(input->num_inputs == 1, "numinputs");
     auto type = input->inputs[0].type;
-    assert(type == INPUT_TYPE_COMMAND, "inputtype-singlecommand");
-
     bool isChild;
     pid_t childPid;
     fork(isChild, childPid);
+
+    assert(type == INPUT_TYPE_COMMAND, "inputtype-singlecommand");
 
     if(isChild){
         auto args = input->inputs[0].data.cmd.args;
@@ -287,6 +286,19 @@ void runSingleCommand(parsed_input* input){
         runProgram(args);
     } else{
         waitForChildProcess(childPid);
+    }
+}
+
+void runNoSeparator(parsed_input* input){
+    assert(input->num_inputs == 1, "numinputs");
+
+    auto type = input->inputs[0].type;
+    if(type == INPUT_TYPE_COMMAND){
+        runSingleCommand(input);
+    } else if(type == INPUT_TYPE_SUBSHELL){
+        cout << "Implement me" << endl;
+    } else{
+        assert(false, "unexpected input no separator");
     }
 }
 
@@ -339,7 +351,7 @@ int main()
         }
         case SEPARATOR_NONE:
         {
-            runSingleCommand(ptr);
+            runNoSeparator(ptr);
             break;
         }
         default:
