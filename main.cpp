@@ -156,7 +156,32 @@ void runPipeline(parsed_input* input)
     delete[] pipeWriteFds;
     delete[] pipeReadFds;
 
-    cout << "Hell yeah." << endl;     
+    cout << "Pipeline run done!" << endl;     
+}
+
+void runSequential(parsed_input* input){
+    cout << "Please handle running me!" << endl;
+    // Example: A ; B ; C
+    // Forking: OG/A, OG/B, OG/C (3 times)
+
+    auto inputCount = (int)input->num_inputs;
+    assert(input->num_inputs > 1, "numinputs");
+
+    for(int i = 0; i < inputCount; i++){
+        bool isChild;
+        pid_t childPid;
+        fork(isChild, childPid);
+
+        if(isChild){
+            assert(input->inputs[i].type == INPUT_TYPE_COMMAND, "inputtype-runseq");
+            auto args = input->inputs[i].data.cmd.args;
+            runProgram(args);
+        } else{
+            waitForChildProcess(childPid);
+        }
+    }
+
+    cout << "Sequential Run Done!" << endl;
 }
 
 void runSingleCommand(parsed_input* input){
@@ -219,7 +244,10 @@ int main()
             break;
         }
         case SEPARATOR_SEQ:
+        {
+            runSequential(ptr);
             break;
+        }
         case SEPARATOR_NONE:
         {
             runSingleCommand(ptr);
