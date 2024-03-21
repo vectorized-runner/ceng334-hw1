@@ -289,6 +289,10 @@ void runSingleCommand(parsed_input* input){
     }
 }
 
+void runForInput(char* str){
+    cout << "runsub" << endl;
+}
+
 void runNoSeparator(parsed_input* input){
     assert(input->num_inputs == 1, "numinputs");
 
@@ -296,7 +300,12 @@ void runNoSeparator(parsed_input* input){
     if(type == INPUT_TYPE_COMMAND){
         runSingleCommand(input);
     } else if(type == INPUT_TYPE_SUBSHELL){
+        cout << "ni" << input->num_inputs << endl;
+        cout << "type: " << input->inputs[0].type << endl;
+        cout << "subshell: '" << input->inputs[0].data.subshell << "'" << endl;
         cout << "Implement me" << endl;
+        auto& subshell = input->inputs[0].data.subshell;
+        runForInput(subshell);
     } else{
         assert(false, "unexpected input no separator");
     }
