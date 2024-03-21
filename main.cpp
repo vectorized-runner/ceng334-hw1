@@ -71,7 +71,7 @@ void runProgram(char* args[]){
 }
 
 // We alreayd know we're in the pipeline here
-void runPipeline(const parsed_input* input)
+void runPipeline(parsed_input* input)
 {
     vector<pid_t> childPids;
     auto inputCount = (int)input->num_inputs;
