@@ -383,6 +383,8 @@ void runForInput(char* str){
             exit(-1);
         }
     }
+
+    free_parsed_input(ptr);
 }
 
 int main()
