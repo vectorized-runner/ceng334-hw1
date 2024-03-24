@@ -59,7 +59,7 @@ void closeFile(int fd){
     auto result = close(fd);
 
     // TODO: This Assertion killing our child programs is helping us somehow.
-    // If I comment-out this assertion, 
+    // If I comment-out this assertion, [ls | wc] executes, [(ls) | wc] keeps hanging
     // assert(result >= 0, "close error");
 }
 
