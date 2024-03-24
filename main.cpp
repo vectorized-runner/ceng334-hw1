@@ -188,10 +188,7 @@ PipelineArgs getPipeline(parsed_input* parsed_input){
 void writeToPipe(int writeFd, string& line){
     auto charPtr = const_cast<char*>(line.c_str());
     auto count = (int)line.size();
-    
-    const char str[] = "Hello";
-
-    auto result = write(writeFd, str, sizeof(str));
+    auto result = write(writeFd, charPtr, count);
 
     if(result < 0){
         fprintf(stderr, "Write failed: %s\n", strerror(errno));
@@ -487,7 +484,7 @@ void runNoSeparator(parsed_input* input){
 }
 
 void runForInput(parsed_input* ptr){
-    pretty_print(ptr);
+    // pretty_print(ptr);
     auto separator = ptr->separator;
 
     switch (separator)
