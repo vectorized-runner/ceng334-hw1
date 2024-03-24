@@ -85,7 +85,7 @@ void redirectStdin(int readFd){
     closeFile(readFd);
 }
 
-void runProgram(char* args[]){
+void runCommand(char* args[]){
     execvp(args[0], args);
 
     // Execvp shouldn't return
@@ -206,7 +206,7 @@ void runPipeline(const pipeline& input)
             }
 
             // Notice program a doesn't continue after here
-            runProgram(programArgs);
+            runCommand(programArgs);
         } else{
             // cout << "Create Child: " << childPid << endl;
             // OG Process
@@ -247,7 +247,7 @@ void runParallel(parsed_input* input){
             auto type = input->inputs[i].type;
             if(type == INPUT_TYPE_COMMAND){
                 auto args = input->inputs[i].data.cmd.args;
-                runProgram(args);
+                runCommand(args);
             } else if(type == INPUT_TYPE_PIPELINE){
                 runPipeline(input->inputs[i].data.pline);
                 exit(0);
@@ -283,7 +283,7 @@ void runSequential(parsed_input* input){
             auto type = input->inputs[i].type;
             if(type == INPUT_TYPE_COMMAND){
                 auto args = input->inputs[i].data.cmd.args;
-                runProgram(args);
+                runCommand(args);
             } else if(type == INPUT_TYPE_PIPELINE){
                 // Notice: It runs the pipeline as the main program, we need to kill it.
                 runPipeline(input->inputs[i].data.pline);
@@ -310,7 +310,7 @@ void runSingleCommand(parsed_input* input){
     if(isChild){
         auto args = input->inputs[0].data.cmd.args;
         // Child process inherits the stdout from parent, no need for redirection
-        runProgram(args);
+        runCommand(args);
     } else{
         waitForChildProcess(childPid);
     }
