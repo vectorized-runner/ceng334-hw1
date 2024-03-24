@@ -195,6 +195,10 @@ void writeToPipe(int writeFd, string& line){
     }
 }
 
+bool is_closed(int fd) {
+    return fcntl(fd, F_GETFL) == -1;
+}
+
 void runRepeater(parsed_input* input, int repeaterWriteFd, int outputFd){
     assert(input->separator == SEPARATOR_PARA, "repeater");
 
@@ -266,6 +270,10 @@ void runRepeater(parsed_input* input, int repeaterWriteFd, int outputFd){
        
     for(int i = 0; i < lineCount; i++){
         writeToPipe(pipeWriteFds[i], line);
+    for(int i = 0; i < inputCount; i++){
+        assert(!is_closed(pipeReadFds[i]), "read-end closed");
+        assert(!is_closed(pipeWriteFds[i]), "write-end closed");
+    }
     }
 
     // Close files for eof
