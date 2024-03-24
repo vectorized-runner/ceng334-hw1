@@ -57,7 +57,10 @@ void pipe(int& read, int& write){
 
 void closeFile(int fd){
     auto result = close(fd);
-    assert(result >= 0, "close error");
+
+    // TODO: This Assertion killing our child programs is helping us somehow.
+    // If I comment-out this assertion, 
+    // assert(result >= 0, "close error");
 }
 
 void waitForChildProcess(pid_t pid){
