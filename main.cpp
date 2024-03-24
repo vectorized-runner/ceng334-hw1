@@ -57,10 +57,7 @@ void pipe(int& read, int& write){
 
 void closeFile(int fd){
     auto result = close(fd);
-
-    // TODO: This Assertion killing our child programs is helping us somehow.
-    // If I comment-out this assertion, [ls | wc] executes, [(ls) | wc] keeps hanging
-    // assert(result >= 0, "close error");
+    assert(result >= 0, "close error");
 }
 
 void waitForChildProcess(pid_t pid){
@@ -160,17 +157,6 @@ PipelineArgs getPipeline(parsed_input* parsed_input){
     return result;
 }
 
-void runCommandOrSubshell(CommandSubshellArgs& args){
-    // Already running on a fork here, no need for another fork
-    if(args.isCommand){
-        // cout << "Running Command [" << args.commandArgs.args[0] << "]" << endl;
-        runCommand(args.commandArgs.args);
-    } else {
-        char* str = args.subshellArgs.str;
-        runForInput(str);
-    }
-}
-
 // We alreayd know we're in the pipeline here
 void runPipeline(const PipelineArgs& input)
 {
@@ -226,8 +212,14 @@ void runPipeline(const PipelineArgs& input)
                 redirectStdout(pipeWriteFds[i]);
             }
 
-            // Notice program a doesn't continue after here
-            runCommandOrSubshell(currentCommand);
+            if(currentCommand.isCommand){
+                // Notice program a doesn't continue after here
+                runCommand(currentCommand.commandArgs.args);
+            } else {
+                char* str = currentCommand.subshellArgs.str;
+                runForInput(str);
+                exit(0);
+            }
         } else{
             // cout << "Create Child: " << childPid << endl;
             // OG Process
