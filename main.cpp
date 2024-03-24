@@ -60,6 +60,8 @@ void pipe(int& read, int& write){
     assert(result >= 0, "pipe error");
     read = fd[0];
     write = fd[1];
+    assert(read >= 0, "pipe-create-read");
+    assert(write >= 0, "pipe-create-write");
 }
 
 
