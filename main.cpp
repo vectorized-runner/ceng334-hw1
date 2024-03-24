@@ -341,18 +341,19 @@ void runNoSeparator(parsed_input* input){
     }
 }
 
-void runForInput(char* str){
+parsed_input* parseInput(char* str){
     parsed_input* ptr = (parsed_input*)malloc(sizeof(parsed_input));
     auto parse_success = parse_line(str, ptr);
-
     assert(parse_success, "parse error");
-
-    // pretty_print(ptr);
-
     auto inputCount = ptr->num_inputs;
-
     assert(inputCount > 0, "inputCount");
+    
+    return ptr;
+}
 
+void runForInput(char* str){
+    auto ptr = parseInput(str);
+    // pretty_print(ptr);
     auto separator = ptr->separator;
 
     switch (separator)
