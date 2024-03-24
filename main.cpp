@@ -87,12 +87,12 @@ void self_dup2(int a, int b){
 }
 
 void redirectStdout(int writeFd){
-    redirect(writeFd, STDOUT_FILENO);
+    self_dup2(writeFd, STDOUT_FILENO);
     closeFile(writeFd);
 }
 
 void redirectStdin(int readFd){
-    redirect(readFd, STDIN_FILENO);
+    self_dup2(readFd, STDIN_FILENO);
     closeFile(readFd);
 }
 
@@ -175,6 +175,11 @@ void runRepeater(parsed_input* input, int repeaterWriteFd, int outputFd){
     auto inputCount = input->num_inputs;
     auto pipeReadFds = new int[inputCount];
     auto pipeWriteFds = new int[inputCount];
+
+    for(int i = 0; i < inputCount; i++){
+        pipe(pipeReadFds[i], pipeWriteFds[i]);
+    }
+
     vector<pid_t> childPids;
 
     // TODO: Repeater writes to all read-fds, when it receives from stdin (Notice: This is just write, not std redirection)
@@ -182,6 +187,21 @@ void runRepeater(parsed_input* input, int repeaterWriteFd, int outputFd){
     // TODO: Wait for all created programs
 
     for(int i = 0; i < inputCount; i++){
+        auto type = input->inputs[i].type;
+        assert(type == INPUT_TYPE_COMMAND, "repeater-2");
+        auto args = input->inputs[i].data.cmd.args;
+
+        bool isChild;
+        pid_t childPid;
+        fork(isChild, childPid);
+
+        // Rep->A, Rep->B, Rep->C
+        if(isChild){
+
+            runCommand(args);
+        } else{
+
+        }
     }
 
     delete[] pipeReadFds;
@@ -255,7 +275,9 @@ void runPipeline(const PipelineArgs& input)
                 auto isParallel = input->num_inputs > 1 && input->separator == SEPARATOR_PARA;
 
                 if(isParallel){
-                    runRepeater(input);
+                    auto repeaterStdoutFd = pipeWriteFds[i];
+                    auto nextStdinFd = pipeReadFds[i + 1];
+                    runRepeater(input, repeaterStdoutFd, nextStdinFd);
                     exit(0);
                 } else{
                     runForInput(input);
