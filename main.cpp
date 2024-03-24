@@ -454,6 +454,19 @@ void runSequential(parsed_input* input){
     // cout << "Sequential Run Done!" << endl;
 }
 
+void runSingleSubshell(char* str){
+    bool isChild;
+    pid_t childPid;
+    fork(isChild, childPid);
+
+    if(isChild){
+        runForInput(parseInput(str));
+        exit(0);
+    } else{
+        waitForChildProcess(childPid);
+    }
+}
+
 void runSingleCommand(parsed_input* input){
     auto type = input->inputs[0].type;
     bool isChild;
@@ -477,7 +490,8 @@ void runNoSeparator(parsed_input* input){
         runSingleCommand(input);
     } else if(type == INPUT_TYPE_SUBSHELL){
         auto& subshell = input->inputs[0].data.subshell;
-        runForInput(parseInput(subshell));
+        runSingleSubshell(subshell);
+        // runForInput(parseInput(subshell));
     } else{
         assert(false, "unexpected input no separator");
     }
