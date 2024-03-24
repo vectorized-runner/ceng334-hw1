@@ -4,6 +4,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <vector>
+#include <fcntl.h>
 
 using namespace std;
 
@@ -187,7 +188,10 @@ PipelineArgs getPipeline(parsed_input* parsed_input){
 void writeToPipe(int writeFd, string& line){
     auto charPtr = const_cast<char*>(line.c_str());
     auto count = (int)line.size();
-    auto result = write(writeFd, charPtr, count);
+    
+    const char str[] = "Hello";
+
+    auto result = write(writeFd, str, sizeof(str));
 
     if(result < 0){
         fprintf(stderr, "Write failed: %s\n", strerror(errno));
@@ -202,7 +206,7 @@ bool is_closed(int fd) {
 void runRepeater(parsed_input* input, int repeaterWriteFd, int outputFd){
     assert(input->separator == SEPARATOR_PARA, "repeater");
 
-    cout << "RunRepeater" << endl;
+    // cout << "RunRepeater" << endl;
     // We're already forked and piped (previous process is sending input to us)
 
     auto inputCount = input->num_inputs;
@@ -214,11 +218,6 @@ void runRepeater(parsed_input* input, int repeaterWriteFd, int outputFd){
     }
 
     vector<pid_t> childPids;
-
-    // TODO: All created programs output to "outputFd"
-
-    cout << "Rep1" << endl;
-
     vector<string> lines;
     string line;
     while(getline(cin, line)){
@@ -238,26 +237,20 @@ void runRepeater(parsed_input* input, int repeaterWriteFd, int outputFd){
         pid_t childPid;
         fork(isChild, childPid);
 
-        cout << "Rep2" << endl;
-
         // Rep->A, Rep->B, Rep->C
         if(isChild){
             
             // A, B, C, Receives from Repeater
             redirectStdin(pipeReadFds[i]);
 
-            cout << "RunningOnChild" << endl;
+            // cout << "RunningOnChild" << endl;
 
-            for(int x = i - 1; x >= 0; x--){
-                // closeFile(pipeWriteFds[x]);
+            for(int x = i; x >= 0; x--){
+                // It works if I leave it like this, no idea why it works though...
+                closeFile(pipeWriteFds[x]);
             }
 
-            // TODO: Is this thinking right? Should we run in parallel?
-            // A, B, C writes to output program, together
-            // TODO: Do I need to redirect stdout?
-            // redirectStdout()
-
-            cout << "BeforeRunningChildProgram" << endl;
+            // cout << "BeforeRunningChildProgram" << endl;
 
             runCommand(args);
         } else{
@@ -266,28 +259,32 @@ void runRepeater(parsed_input* input, int repeaterWriteFd, int outputFd){
         }
     }
 
-    cout << "Rep3" << endl;
-       
-    for(int i = 0; i < lineCount; i++){
-        writeToPipe(pipeWriteFds[i], line);
     for(int i = 0; i < inputCount; i++){
         assert(!is_closed(pipeReadFds[i]), "read-end closed");
         assert(!is_closed(pipeWriteFds[i]), "write-end closed");
     }
+
+    for(int i = 0; i < inputCount; i++){
+        for(int j = 0; j < lineCount; j++){
+            auto& line = lines[j];
+            // cout << "pipeValue is " << pipeWriteFds[i] << endl ;
+            // cout << "line value is " << line << endl;
+            writeToPipe(pipeWriteFds[i], line);
+        }
+
+        // cout << "sent input to number " << i << endl;
     }
 
     // Close files for eof
     for(int i = 0; i < inputCount; i++){
-        // closeFile(pipeWriteFds[i]);
+        closeFile(pipeWriteFds[i]);
     }
-
-    cout << "Rep4" << endl;
 
     auto childCount = (int)childPids.size();
     for(int i = 0; i < childCount; i++){
-        cout << "Waiting for child..." << childPids[i] << endl;
+        // cout << "Waiting for child..." << childPids[i] << endl;
         waitForChildProcess(childPids[i]);
-        cout << "One child process exited: " << childPids[i] << endl;
+        // cout << "One child process exited: " << childPids[i] << endl;
     }
 
     delete[] pipeReadFds;
