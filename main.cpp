@@ -312,21 +312,11 @@ void runSingleCommand(parsed_input* input){
 
 void runNoSeparator(parsed_input* input){
     assert(input->num_inputs == 1, "numinputs");
-
     auto type = input->inputs[0].type;
+    assert(input.type == INPUT_TYPE_COMMAND || input.type == INPUT_TYPE_SUBSHELL, "run-no-separator");
     CommandSubshellArgs args;
-    auto isCommand = type == INPUT_TYPE_COMMAND;
-    args.isCommand = isCommand;
-
-    if(isCommand){
-
-    } else{
-
-    }
-
-    // TODO: Copy subshell args
-    // TODO: Copy command args
-
+    getCommand(input->inputs[0], args);
+    runCommandOrSubshell(args);
 }
 
 void runForInput(char* str){
