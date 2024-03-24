@@ -165,11 +165,25 @@ PipelineArgs getPipeline(parsed_input* parsed_input){
     return result;
 }
 
-void runRepeater(parsed_input* input){
+void runRepeater(parsed_input* input, int repeaterWriteFd, int outputFd){
+    assert(input->separator == SEPARATOR_PARA, "repeater");
     // We're already forked and piped (previous process is sending input to us)
 
-    // We'll run parallel
     auto inputCount = input->num_inputs;
+    auto pipeReadFds = new int[inputCount];
+    auto pipeWriteFds = new int[inputCount];
+    vector<pid_t> childPids;
+
+    // TODO: Repeater writes to all read-fds, when it receives from stdin (Notice: This is just write, not std redirection)
+    // TODO: All created programs output to "outputFd"
+    // TODO: Wait for all created programs
+
+    for(int i = 0; i < inputCount; i++){
+    }
+
+    delete[] pipeReadFds;
+    delete[] pipeWriteFds;
+
     cout << "inputcountrepeater" << inputCount << endl;
 }
 
@@ -367,7 +381,7 @@ void runNoSeparator(parsed_input* input){
 }
 
 void runForInput(parsed_input* ptr){
-    // pretty_print(ptr);
+    pretty_print(ptr);
     auto separator = ptr->separator;
 
     switch (separator)
