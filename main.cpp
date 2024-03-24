@@ -103,7 +103,7 @@ void copyString(char*& src, char*& dst){
     memcpy(dst, src, srcLength);
 }
 
-void getCommand(const single_input& input, CommandSubshellArgs& result){
+void getCommand(single_input& input, CommandSubshellArgs& result){
     auto type = input.type;
 
     if(type == INPUT_TYPE_COMMAND){
