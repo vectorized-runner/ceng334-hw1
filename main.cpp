@@ -81,8 +81,8 @@ void waitForChildProcess(pid_t pid){
     }
 }
 
-void redirect(int srcFd, int dstFd){
-    auto result = dup2(srcFd, dstFd);
+void self_dup2(int a, int b){
+    auto result = dup2(a, b);
     assert(result >= 0 , "dup error");
 }
 
