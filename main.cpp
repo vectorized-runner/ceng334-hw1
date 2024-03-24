@@ -92,7 +92,7 @@ void runCommand(char* args[]){
     assert(false, "execvp error");
 }
 
-void copyStringToSource(char*& src, char*& dst){
+void copyString(char*& src, char*& dst){
     if(src == NULL){
         dst = NULL;
         return;
@@ -103,6 +103,24 @@ void copyStringToSource(char*& src, char*& dst){
     memcpy(dst, src, srcLength);
 }
 
+void getCommand(const single_input& input, CommandSubshellArgs& result){
+    auto type = input.type;
+
+    if(type == INPUT_TYPE_COMMAND){
+        result.isCommand = true;
+        for(int x = 0; x < MAX_ARGS; x++){
+                auto& src = input.data.cmd.args[x];
+                auto& dst = result.commandArgs.args[x];
+                copyString(src, dst);
+            }
+    } else if(type == INPUT_TYPE_SUBSHELL){
+        result.isCommand = false;
+        // TODO:
+    } else{
+        assert(false, "getpipelineargs-2");
+    }
+}
+
 PipelineArgs getPipeline(parsed_input* parsed_input){
     assert(parsed_input->separator == SEPARATOR_PIPE, "getpipelineargs-1");
     auto count = (int)parsed_input->num_inputs;
@@ -110,32 +128,29 @@ PipelineArgs getPipeline(parsed_input* parsed_input){
     result.count = count;
 
     for(int i = 0; i < count; i++){
-        auto type = parsed_input->inputs[i].type;
-        auto& command = result.commands[i];
-
-        if(type == INPUT_TYPE_COMMAND){
-            command.isCommand = true;
-            for(int x = 0; x < MAX_ARGS; x++){
-                    auto& src = parsed_input->inputs[i].data.cmd.args[x];
-                    auto& dst = result.commands[i].commandArgs.args[x];
-                    copyStringToSource(src, dst);
-                }
-        } else if(type == INPUT_TYPE_SUBSHELL){
-            command.isCommand = false;
-            // TODO:
-        } else{
-            assert(false, "getpipelineargs-2");
-        }
+        auto input = parsed_input->inputs[i];
+        getCommand(input, result.commands[i]);
     }
 
     return result;
 }
 
+void runCommandOrSubshell(const CommandSubshellArgs& args){
+    if(args.isCommand){
+        runCommand(input);
+    } else if(type == INPUT_TYPE_SUBSHELL){
+        auto& subshell = input->inputs[0].data.subshell;
+        runForInput(subshell);
+    } else{
+        assert(false, "unexpected input type");
+    }
+}
+
 // We alreayd know we're in the pipeline here
-void runPipeline(const pipeline& input)
+void runPipeline(const PipelineArgs& input)
 {
     vector<pid_t> childPids;
-    auto inputCount = (int)input.num_commands;
+    auto inputCount = (int)input.count;
 
     int pipeCount = inputCount - 1;
     int* pipeWriteFds = new int[pipeCount];
@@ -159,27 +174,6 @@ void runPipeline(const pipeline& input)
 
         if(isChild){
             // Redirect A -> B, B -> C, Run A, B, C
-   
-            auto programArgs = currentCommand.args;
-            /*
-            if(i == 0) {
-                programArgs[0] = "ls";
-                for(int i = 1; i < MAX_ARGS; i++){
-                    programArgs[i] = NULL;
-                }
-            } else{
-                programArgs[0] = "wc";
-                programArgs[1] = "-l";
-                for(int i = 2; i < MAX_ARGS; i++){
-                    programArgs[i] = NULL;
-                }
-            }
-                 while(programArgs[z] != NULL){
-                cout << "ARG " << z << " : " << programArgs[z] << endl;
-                z++;
-            }
-            */
-
 
             if(i != 0){
                 // B listens from A
@@ -320,14 +314,19 @@ void runNoSeparator(parsed_input* input){
     assert(input->num_inputs == 1, "numinputs");
 
     auto type = input->inputs[0].type;
-    if(type == INPUT_TYPE_COMMAND){
-        runSingleCommand(input);
-    } else if(type == INPUT_TYPE_SUBSHELL){
-        auto& subshell = input->inputs[0].data.subshell;
-        runForInput(subshell);
+    CommandSubshellArgs args;
+    auto isCommand = type == INPUT_TYPE_COMMAND;
+    args.isCommand = isCommand;
+
+    if(isCommand){
+
     } else{
-        assert(false, "unexpected input no separator");
+
     }
+
+    // TODO: Copy subshell args
+    // TODO: Copy command args
+
 }
 
 void runForInput(char* str){
