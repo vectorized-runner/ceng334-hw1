@@ -385,21 +385,6 @@ void runForInput(char* str){
     }
 }
 
-void runSubshell(char* str){
-    bool isChild;
-    pid_t childPid;
-    fork(isChild, childPid);
-
-    if(isChild){
-        runForInput(str);
-        exit(0);
-    } else{
-        waitForChildProcess(childPid);
-    }
-
-    // cout << "Running subshell is done!" << endl;
-}
-
 int main()
 {
     string inputLine;
