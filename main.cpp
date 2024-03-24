@@ -205,6 +205,16 @@ void runRepeater(parsed_input* input, int repeaterWriteFd, int outputFd){
         }
     }
 
+    // TODO: Write to child programs 
+    // TODO: Close properly on child programs
+
+    auto childCount = (int)childPids.size();
+    for(int i = 0; i < childCount; i++){
+        // cout << "Waiting for child..." << childPids[i] << endl;
+        waitForChildProcess(childPids[i]);
+        // cout << "One child process exited: " << childPids[i] << endl;
+    }
+
     delete[] pipeReadFds;
     delete[] pipeWriteFds;
 
