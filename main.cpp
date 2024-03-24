@@ -200,7 +200,7 @@ bool is_closed(int fd) {
     return fcntl(fd, F_GETFL) == -1;
 }
 
-void runRepeater(parsed_input* input, int repeaterWriteFd, int outputFd){
+void runRepeater(parsed_input* input){
     assert(input->separator == SEPARATOR_PARA, "repeater");
 
     // cout << "RunRepeater" << endl;
@@ -353,9 +353,7 @@ void runPipeline(const PipelineArgs& input)
                 auto isParallel = input->num_inputs > 1 && input->separator == SEPARATOR_PARA;
 
                 if(isParallel){
-                    auto repeaterStdoutFd = pipeWriteFds[i];
-                    auto nextStdinFd = pipeReadFds[i + 1];
-                    runRepeater(input, repeaterStdoutFd, nextStdinFd);
+                    runRepeater(input);
                     exit(0);
                 } else{
                     runForInput(input);
