@@ -255,22 +255,16 @@ void runRepeater(parsed_input* input, int repeaterWriteFd, int outputFd){
 
             runCommand(args);
         } else{
-            cout << "BeforeWrite!" << endl;
-
-            assert(pipeWriteFds[i] > 0, "asdkjdf");
-
-            for(int i = 0; i < lineCount; i++){
-                writeToPipe(pipeWriteFds[i], line);
-            }
-
             // Repeater program
             childPids.push_back(childPid);
         }
     }
 
     cout << "Rep3" << endl;
-
-
+       
+    for(int i = 0; i < lineCount; i++){
+        writeToPipe(pipeWriteFds[i], line);
+    }
 
     // Close files for eof
     for(int i = 0; i < inputCount; i++){
