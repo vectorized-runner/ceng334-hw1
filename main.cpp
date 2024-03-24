@@ -182,8 +182,18 @@ PipelineArgs getPipeline(parsed_input* parsed_input){
     return result;
 }
 
+void writeToPipe(int writeFd, string& line){
+    auto charPtr = const_cast<char*>(line.c_str());
+    auto count = (int)line.size();
+    auto result = write(writeFd, charPtr, count);
+
+    assert(result >= 0, "pipe-write");
+}
+
 void runRepeater(parsed_input* input, int repeaterWriteFd, int outputFd){
     assert(input->separator == SEPARATOR_PARA, "repeater");
+
+    cout << "RunRepeater" << endl;
     // We're already forked and piped (previous process is sending input to us)
 
     auto inputCount = input->num_inputs;
@@ -198,17 +208,35 @@ void runRepeater(parsed_input* input, int repeaterWriteFd, int outputFd){
 
     // TODO: All created programs output to "outputFd"
 
+    cout << "Rep1" << endl;
+
     for(int i = 0; i < inputCount; i++){
         auto type = input->inputs[i].type;
         assert(type == INPUT_TYPE_COMMAND, "repeater-2");
         auto args = input->inputs[i].data.cmd.args;
 
+        pipe(pipeReadFds[i], pipeWriteFds[i]);
+
         bool isChild;
         pid_t childPid;
         fork(isChild, childPid);
 
+        cout << "Rep2" << endl;
+
         // Rep->A, Rep->B, Rep->C
         if(isChild){
+            
+            // A, B, C, Receives from Repeater
+            redirectStdin(pipeReadFds[i]);
+
+            // TODO: Close unused write ends
+
+            // TODO: Is this thinking right? Should we run in parallel?
+            // A, B, C writes to output program, together
+            // TODO: Do I need to redirect stdout?
+            // redirectStdout()
+
+            cout << "BeforeRunningChildProgram" << endl;
 
             runCommand(args);
         } else{
@@ -217,14 +245,30 @@ void runRepeater(parsed_input* input, int repeaterWriteFd, int outputFd){
         }
     }
 
-    // TODO: Write to child programs 
-    // TODO: Close properly on child programs
+    cout << "Rep3" << endl;
+
+    string line;
+    while(getline(cin, line)){
+
+        cout << "Received Input: " << line << endl;
+        for(int i = 0; i < inputCount; i++){
+            writeToPipe(pipeWriteFds[i], line);
+        }
+    }
+
+    // Close all files
+    for(int i = 0; i < inputCount; i++){
+        closeFile(pipeWriteFds[i]);
+        closeFile(pipeReadFds[i]);
+    }
+
+    cout << "Rep4" << endl;
 
     auto childCount = (int)childPids.size();
     for(int i = 0; i < childCount; i++){
-        // cout << "Waiting for child..." << childPids[i] << endl;
+        cout << "Waiting for child..." << childPids[i] << endl;
         waitForChildProcess(childPids[i]);
-        // cout << "One child process exited: " << childPids[i] << endl;
+        cout << "One child process exited: " << childPids[i] << endl;
     }
 
     delete[] pipeReadFds;
