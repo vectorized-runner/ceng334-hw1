@@ -85,14 +85,14 @@ void redirectStdin(int readFd){
     closeFile(readFd);
 }
 
-void runProgram(char* args[]){
+void runCommand(char* args[]){
     execvp(args[0], args);
 
     // Execvp shouldn't return
     assert(false, "execvp error");
 }
 
-void copyStringToSource(char*& src, char*& dst){
+void copyString(char*& src, char*& dst){
     if(src == NULL){
         dst = NULL;
         return;
@@ -103,31 +103,67 @@ void copyStringToSource(char*& src, char*& dst){
     memcpy(dst, src, srcLength);
 }
 
-pipeline getPipeline(parsed_input* parsed_input){
-    assert(parsed_input->separator == SEPARATOR_PIPE, "getpipelineargs-1");
-    auto count = (int)parsed_input->num_inputs;
-    pipeline result;
-    result.num_commands = count;
+void copyInPlace(char* src, char* dst, int count){
+    memcpy(dst, src, count);
+}
 
-    for(int i = 0; i < count; i++){
-        auto type = parsed_input->inputs[i].type;
-        assert(type == INPUT_TYPE_COMMAND, "getpipelineargs-2");
+void getCommand(single_input& input, CommandSubshellArgs& result){
+    auto type = input.type;
+
+    if(type == INPUT_TYPE_COMMAND){
+        result.isCommand = true;
+        for(int x = 0; x < MAX_ARGS; x++){
+                auto& src = input.data.cmd.args[x];
+                auto& dst = result.commandArgs.args[x];
+                copyString(src, dst);
+            }
+    } else if(type == INPUT_TYPE_SUBSHELL){
+        result.isCommand = false;
+        copyInPlace(input.data.subshell, result.subshellArgs.str, INPUT_BUFFER_SIZE);
+    } else{
+        assert(false, "getpipelineargs-2");
+    }
+}
+
+PipelineArgs getPipeline(pipeline& pipeline){
+    PipelineArgs result;
+    result.count = pipeline.num_commands;
+
+    for(int i = 0; i < result.count; i++){
+        single_input src;
+        src.type = INPUT_TYPE_COMMAND;
 
         for(int x = 0; x < MAX_ARGS; x++){
-            auto& src = parsed_input->inputs[i].data.cmd.args[x];
-            auto& dst = result.commands[i].args[x];
-            copyStringToSource(src, dst);
+            copyString(pipeline.commands[i].args[x], src.data.cmd.args[x]);
         }
+
+        getCommand(src, result.commands[i]);
+    }
+
+    return result;
+}
+
+PipelineArgs getPipeline(parsed_input* parsed_input){
+    assert(parsed_input->separator == SEPARATOR_PIPE, "getpipelineargs-1");
+    auto count = (int)parsed_input->num_inputs;
+    PipelineArgs result;
+    result.count = count;
+
+    for(int i = 0; i < count; i++){
+        auto input = parsed_input->inputs[i];
+        getCommand(input, result.commands[i]);
     }
 
     return result;
 }
 
 // We alreayd know we're in the pipeline here
-void runPipeline(const pipeline& input)
+void runPipeline(const PipelineArgs& input)
 {
+    // cout << "RunPipelineStarted" << endl;
+
     vector<pid_t> childPids;
-    auto inputCount = (int)input.num_commands;
+    auto inputCount = (int)input.count;
 
     int pipeCount = inputCount - 1;
     int* pipeWriteFds = new int[pipeCount];
@@ -151,27 +187,6 @@ void runPipeline(const pipeline& input)
 
         if(isChild){
             // Redirect A -> B, B -> C, Run A, B, C
-   
-            auto programArgs = currentCommand.args;
-            /*
-            if(i == 0) {
-                programArgs[0] = "ls";
-                for(int i = 1; i < MAX_ARGS; i++){
-                    programArgs[i] = NULL;
-                }
-            } else{
-                programArgs[0] = "wc";
-                programArgs[1] = "-l";
-                for(int i = 2; i < MAX_ARGS; i++){
-                    programArgs[i] = NULL;
-                }
-            }
-                 while(programArgs[z] != NULL){
-                cout << "ARG " << z << " : " << programArgs[z] << endl;
-                z++;
-            }
-            */
-
 
             if(i != 0){
                 // B listens from A
@@ -197,8 +212,14 @@ void runPipeline(const pipeline& input)
                 redirectStdout(pipeWriteFds[i]);
             }
 
-            // Notice program a doesn't continue after here
-            runProgram(programArgs);
+            if(currentCommand.isCommand){
+                // Notice program a doesn't continue after here
+                runCommand(currentCommand.commandArgs.args);
+            } else {
+                char* str = currentCommand.subshellArgs.str;
+                runForInput(str);
+                exit(0);
+            }
         } else{
             // cout << "Create Child: " << childPid << endl;
             // OG Process
@@ -221,7 +242,7 @@ void runPipeline(const pipeline& input)
     delete[] pipeWriteFds;
     delete[] pipeReadFds;
 
-    cout << "Pipeline run done!" << endl;     
+    // cout << "Pipeline run done!" << endl;     
 }
 
 void runParallel(parsed_input* input){
@@ -239,9 +260,9 @@ void runParallel(parsed_input* input){
             auto type = input->inputs[i].type;
             if(type == INPUT_TYPE_COMMAND){
                 auto args = input->inputs[i].data.cmd.args;
-                runProgram(args);
+                runCommand(args);
             } else if(type == INPUT_TYPE_PIPELINE){
-                runPipeline(input->inputs[i].data.pline);
+                runPipeline(getPipeline(input->inputs[i].data.pline));
                 exit(0);
             } else{
                 assert(false, "inputtype-runpara");
@@ -255,7 +276,7 @@ void runParallel(parsed_input* input){
         waitForChildProcess(childPids[i]);
     }
 
-    cout << "Parallel Run Done." << endl;
+    // cout << "Parallel Run Done." << endl;
 }
 
 void runSequential(parsed_input* input){
@@ -264,7 +285,7 @@ void runSequential(parsed_input* input){
     auto inputCount = (int)input->num_inputs;
     assert(inputCount > 1, "numinputs");
 
-    cout << "Sequential Run started." << endl;
+    // cout << "Sequential Run started." << endl;
 
     for(int i = 0; i < inputCount; i++){
         bool isChild;
@@ -275,10 +296,10 @@ void runSequential(parsed_input* input){
             auto type = input->inputs[i].type;
             if(type == INPUT_TYPE_COMMAND){
                 auto args = input->inputs[i].data.cmd.args;
-                runProgram(args);
+                runCommand(args);
             } else if(type == INPUT_TYPE_PIPELINE){
                 // Notice: It runs the pipeline as the main program, we need to kill it.
-                runPipeline(input->inputs[i].data.pline);
+                runPipeline(getPipeline(input->inputs[i].data.pline));
                 exit(0);
             } else{
                 assert(false, "inputtype-seq");
@@ -288,7 +309,7 @@ void runSequential(parsed_input* input){
         }
     }
 
-    cout << "Sequential Run Done!" << endl;
+    // cout << "Sequential Run Done!" << endl;
 }
 
 void runSingleCommand(parsed_input* input){
@@ -302,15 +323,13 @@ void runSingleCommand(parsed_input* input){
     if(isChild){
         auto args = input->inputs[0].data.cmd.args;
         // Child process inherits the stdout from parent, no need for redirection
-        runProgram(args);
+        runCommand(args);
     } else{
         waitForChildProcess(childPid);
     }
 }
 
 void runNoSeparator(parsed_input* input){
-    assert(input->num_inputs == 1, "numinputs");
-
     auto type = input->inputs[0].type;
     if(type == INPUT_TYPE_COMMAND){
         runSingleCommand(input);
@@ -328,7 +347,7 @@ void runForInput(char* str){
 
     assert(parse_success, "parse error");
 
-    pretty_print(ptr);
+    // pretty_print(ptr);
 
     auto inputCount = ptr->num_inputs;
 
@@ -366,21 +385,6 @@ void runForInput(char* str){
     }
 }
 
-void runSubshell(char* str){
-    bool isChild;
-    pid_t childPid;
-    fork(isChild, childPid);
-
-    if(isChild){
-        runForInput(str);
-        exit(0);
-    } else{
-        waitForChildProcess(childPid);
-    }
-
-    cout << "Running subshell is done!" << endl;
-}
-
 int main()
 {
     string inputLine;
@@ -395,7 +399,7 @@ int main()
             continue;
         }
 
-        cout << "Running For Input: '" << inputLine << "'" << endl;
+        // cout << "Running For Input: '" << inputLine << "'" << endl;
 
         auto cPtr = const_cast<char *>(inputLine.c_str());
         runForInput(cPtr);
