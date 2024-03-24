@@ -103,6 +103,10 @@ void copyString(char*& src, char*& dst){
     memcpy(dst, src, srcLength);
 }
 
+void copyInPlace(char* src, char* dst, int count){
+    memcpy(dst, src, count);
+}
+
 void getCommand(single_input& input, CommandSubshellArgs& result){
     auto type = input.type;
 
@@ -115,7 +119,7 @@ void getCommand(single_input& input, CommandSubshellArgs& result){
             }
     } else if(type == INPUT_TYPE_SUBSHELL){
         result.isCommand = false;
-        // TODO:
+        copyInPlace(input.data.subshell, result.subshellArgs.str, INPUT_BUFFER_SIZE);
     } else{
         assert(false, "getpipelineargs-2");
     }
