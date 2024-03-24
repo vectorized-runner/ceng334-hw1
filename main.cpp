@@ -121,6 +121,24 @@ void getCommand(single_input& input, CommandSubshellArgs& result){
     }
 }
 
+PipelineArgs getPipeline(pipeline& pipeline){
+    PipelineArgs result;
+    result.count = pipeline.num_commands;
+
+    for(int i = 0; i < result.count; i++){
+        single_input src;
+        src.type = INPUT_TYPE_COMMAND;
+
+        for(int x = 0; x < MAX_ARGS; x++){
+            copyString(pipeline.commands[i].args[x], src.data.cmd.args[x]);
+        }
+
+        getCommand(src, result.commands[i]);
+    }
+
+    return result;
+}
+
 PipelineArgs getPipeline(parsed_input* parsed_input){
     assert(parsed_input->separator == SEPARATOR_PIPE, "getpipelineargs-1");
     auto count = (int)parsed_input->num_inputs;
@@ -198,7 +216,7 @@ void runPipeline(const PipelineArgs& input)
             }
 
             // Notice program a doesn't continue after here
-            runCommand(programArgs);
+            runCommandOrSubshell(currentCommand);
         } else{
             // cout << "Create Child: " << childPid << endl;
             // OG Process
@@ -241,7 +259,7 @@ void runParallel(parsed_input* input){
                 auto args = input->inputs[i].data.cmd.args;
                 runCommand(args);
             } else if(type == INPUT_TYPE_PIPELINE){
-                runPipeline(input->inputs[i].data.pline);
+                runPipeline(getPipeline(input->inputs[i].data.pline));
                 exit(0);
             } else{
                 assert(false, "inputtype-runpara");
@@ -278,7 +296,7 @@ void runSequential(parsed_input* input){
                 runCommand(args);
             } else if(type == INPUT_TYPE_PIPELINE){
                 // Notice: It runs the pipeline as the main program, we need to kill it.
-                runPipeline(input->inputs[i].data.pline);
+                runPipeline(getPipeline(input->inputs[i].data.pline));
                 exit(0);
             } else{
                 assert(false, "inputtype-seq");
