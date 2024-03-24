@@ -87,14 +87,27 @@ void self_dup2(int a, int b){
     assert(result >= 0 , "dup error");
 }
 
-void redirectStdout(int writeFd){
-    self_dup2(writeFd, STDOUT_FILENO);
-    closeFile(writeFd);
+void redirect(int fd1, int fd2){
+    self_dup2(fd1, fd2);
+    closeFile(fd1);
 }
 
+void redirectInput(int readFd, int currentInFd){
+    redirect(readFd, currentInFd);
+}
+
+void redirectOutput(int writeFd, int currentOutFd){
+    redirect(writeFd, currentOutFd);
+}
+
+// After the call to this, writing to stdout goes to writefd. Writefd can be deleted.
+void redirectStdout(int writeFd){
+    redirectOutput(writeFd, STDOUT_FILENO);
+}
+
+// After the call to this, stdin reads what's been written to readfd. Readfd can be deleted.
 void redirectStdin(int readFd){
-    self_dup2(readFd, STDIN_FILENO);
-    closeFile(readFd);
+    redirectInput(readFd, STDIN_FILENO);
 }
 
 void runCommand(char* args[]){
