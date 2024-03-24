@@ -81,6 +81,7 @@ void waitForChildProcess(pid_t pid){
     }
 }
 
+// Duplicates the file descriptor, old and new file descriptors can be used interchangeably.
 void self_dup2(int a, int b){
     auto result = dup2(a, b);
     assert(result >= 0 , "dup error");
@@ -182,9 +183,7 @@ void runRepeater(parsed_input* input, int repeaterWriteFd, int outputFd){
 
     vector<pid_t> childPids;
 
-    // TODO: Repeater writes to all read-fds, when it receives from stdin (Notice: This is just write, not std redirection)
     // TODO: All created programs output to "outputFd"
-    // TODO: Wait for all created programs
 
     for(int i = 0; i < inputCount; i++){
         auto type = input->inputs[i].type;
