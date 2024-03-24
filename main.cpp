@@ -135,12 +135,12 @@ PipelineArgs getPipeline(parsed_input* parsed_input){
     return result;
 }
 
-void runCommandOrSubshell(const CommandSubshellArgs& args){
+void runCommandOrSubshell(CommandSubshellArgs& args){
     if(args.isCommand){
-        runCommand(input);
+        runCommand(args.commandArgs.args);
     } else {
-        auto& subshell = input->inputs[0].data.subshell;
-        runForInput(subshell);
+        char* str = args.subshellArgs.str;
+        runSubshell(str);
     }
 }
 
