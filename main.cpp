@@ -81,15 +81,18 @@ void waitForChildProcess(pid_t pid){
     }
 }
 
-void redirectStdout(int writeFd){
-    auto result = dup2(writeFd, STDOUT_FILENO);
+void redirect(int srcFd, int dstFd){
+    auto result = dup2(srcFd, dstFd);
     assert(result >= 0 , "dup error");
+}
+
+void redirectStdout(int writeFd){
+    redirect(writeFd, STDOUT_FILENO);
     closeFile(writeFd);
 }
 
 void redirectStdin(int readFd){
-    auto result = dup2(readFd, STDIN_FILENO);
-    assert(result >= 0 , "dup error");
+    redirect(readFd, STDIN_FILENO);
     closeFile(readFd);
 }
 
