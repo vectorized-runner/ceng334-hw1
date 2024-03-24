@@ -327,12 +327,15 @@ void runSingleCommand(parsed_input* input){
 }
 
 void runNoSeparator(parsed_input* input){
-    assert(input->num_inputs == 1, "numinputs");
     auto type = input->inputs[0].type;
-    assert(type == INPUT_TYPE_COMMAND || type == INPUT_TYPE_SUBSHELL, "run-no-separator");
-    CommandSubshellArgs args;
-    getCommand(input->inputs[0], args);
-    runCommandOrSubshell(args);
+    if(type == INPUT_TYPE_COMMAND){
+        runSingleCommand(input);
+    } else if(type == INPUT_TYPE_SUBSHELL){
+        auto& subshell = input->inputs[0].data.subshell;
+        runForInput(subshell);
+    } else{
+        assert(false, "unexpected input no separator");
+    }
 }
 
 void runForInput(char* str){
