@@ -313,7 +313,7 @@ void runSingleCommand(parsed_input* input){
 void runNoSeparator(parsed_input* input){
     assert(input->num_inputs == 1, "numinputs");
     auto type = input->inputs[0].type;
-    assert(input.type == INPUT_TYPE_COMMAND || input.type == INPUT_TYPE_SUBSHELL, "run-no-separator");
+    assert(type == INPUT_TYPE_COMMAND || type == INPUT_TYPE_SUBSHELL, "run-no-separator");
     CommandSubshellArgs args;
     getCommand(input->inputs[0], args);
     runCommandOrSubshell(args);
