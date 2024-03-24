@@ -138,11 +138,9 @@ PipelineArgs getPipeline(parsed_input* parsed_input){
 void runCommandOrSubshell(const CommandSubshellArgs& args){
     if(args.isCommand){
         runCommand(input);
-    } else if(type == INPUT_TYPE_SUBSHELL){
+    } else {
         auto& subshell = input->inputs[0].data.subshell;
         runForInput(subshell);
-    } else{
-        assert(false, "unexpected input type");
     }
 }
 
