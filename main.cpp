@@ -7,6 +7,25 @@
 
 using namespace std;
 
+struct SubshellArgs{
+    char str[INPUT_BUFFER_SIZE];
+};
+
+struct CommandArgs{
+    char* args[MAX_ARGS];
+};
+
+struct CommandSubshellArgs{
+    bool isCommand;
+    CommandArgs commandArgs;
+    SubshellArgs subshellArgs;
+};
+
+struct PipelineArgs {
+    CommandSubshellArgs commands[MAX_INPUTS];
+    int count;
+};
+
 void runForInput(char* str);
 void runSubshell(char* str);
 
