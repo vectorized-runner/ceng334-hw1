@@ -161,14 +161,13 @@ PipelineArgs getPipeline(parsed_input* parsed_input){
 }
 
 void runCommandOrSubshell(CommandSubshellArgs& args){
+    // Already running on a fork here, no need for another fork
     if(args.isCommand){
         // cout << "Running Command [" << args.commandArgs.args[0] << "]" << endl;
         runCommand(args.commandArgs.args);
     } else {
         char* str = args.subshellArgs.str;
         runForInput(str);
-        // cout << "Running Subshell [" << str << "]" << endl;
-        // runSubshell(str);
     }
 }
 
