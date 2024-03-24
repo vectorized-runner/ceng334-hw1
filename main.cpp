@@ -103,20 +103,28 @@ void copyStringToSource(char*& src, char*& dst){
     memcpy(dst, src, srcLength);
 }
 
-pipeline getPipeline(parsed_input* parsed_input){
+PipelineArgs getPipeline(parsed_input* parsed_input){
     assert(parsed_input->separator == SEPARATOR_PIPE, "getpipelineargs-1");
     auto count = (int)parsed_input->num_inputs;
-    pipeline result;
-    result.num_commands = count;
+    PipelineArgs result;
+    result.count = count;
 
     for(int i = 0; i < count; i++){
         auto type = parsed_input->inputs[i].type;
-        assert(type == INPUT_TYPE_COMMAND, "getpipelineargs-2");
+        auto& command = result.commands[i];
 
-        for(int x = 0; x < MAX_ARGS; x++){
-            auto& src = parsed_input->inputs[i].data.cmd.args[x];
-            auto& dst = result.commands[i].args[x];
-            copyStringToSource(src, dst);
+        if(type == INPUT_TYPE_COMMAND){
+            command.isCommand = true;
+            for(int x = 0; x < MAX_ARGS; x++){
+                    auto& src = parsed_input->inputs[i].data.cmd.args[x];
+                    auto& dst = result.commands[i].commandArgs.args[x];
+                    copyStringToSource(src, dst);
+                }
+        } else if(type == INPUT_TYPE_SUBSHELL){
+            command.isCommand = false;
+            // TODO:
+        } else{
+            assert(false, "getpipelineargs-2");
         }
     }
 
