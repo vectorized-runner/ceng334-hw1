@@ -200,7 +200,8 @@ void runRepeater(parsed_input* input, int repeaterWriteFd, int outputFd){
 
             runCommand(args);
         } else{
-
+            // Repeater program
+            childPids.push_back(childPid);
         }
     }
 
