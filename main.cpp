@@ -165,6 +165,14 @@ PipelineArgs getPipeline(parsed_input* parsed_input){
     return result;
 }
 
+void runRepeater(parsed_input* input){
+    // We're already forked and piped (previous process is sending input to us)
+
+    // We'll run parallel
+    auto inputCount = input->num_inputs;
+    cout << "inputcountrepeater" << inputCount << endl;
+}
+
 // We alreayd know we're in the pipeline here
 void runPipeline(const PipelineArgs& input)
 {
@@ -224,9 +232,18 @@ void runPipeline(const PipelineArgs& input)
                 // Notice program a doesn't continue after here
                 runCommand(currentCommand.commandArgs.args);
             } else {
+                
                 char* str = currentCommand.subshellArgs.str;
-                runForInput(parseInput(str));
-                exit(0);
+                auto input = parseInput(str);
+                auto isParallel = input->num_inputs > 1 && input->separator == SEPARATOR_PARA;
+
+                if(isParallel){
+                    runRepeater(input);
+                    exit(0);
+                } else{
+                    runForInput(input);
+                    exit(0);
+                }
             }
         } else{
             // cout << "Create Child: " << childPid << endl;
