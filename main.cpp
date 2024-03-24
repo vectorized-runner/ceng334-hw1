@@ -4,6 +4,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <vector>
+#include <fcntl.h>
 
 using namespace std;
 
@@ -26,15 +27,23 @@ struct PipelineArgs {
     int count;
 };
 
-void runForInput(char* str);
-void runSubshell(char* str);
-
 void assert(bool condition, string message){
     if(!condition){
         cout << "ASSERTION FAILED: " << message << endl;
         exit(-1);
     }
 }
+
+parsed_input* parseInput(char* str){
+    parsed_input* ptr = (parsed_input*)malloc(sizeof(parsed_input));
+    auto parse_success = parse_line(str, ptr);
+    assert(parse_success, "parse error");
+    auto inputCount = ptr->num_inputs;
+    assert(inputCount > 0, "inputCount");
+    return ptr;
+}
+
+void runForInput(parsed_input* ptr);
 
 void fork(bool& isChild, pid_t& childPid){
     auto pid = fork();
@@ -52,6 +61,8 @@ void pipe(int& read, int& write){
     assert(result >= 0, "pipe error");
     read = fd[0];
     write = fd[1];
+    assert(read >= 0, "pipe-create-read");
+    assert(write >= 0, "pipe-create-write");
 }
 
 
@@ -73,16 +84,33 @@ void waitForChildProcess(pid_t pid){
     }
 }
 
-void redirectStdout(int writeFd){
-    auto result = dup2(writeFd, STDOUT_FILENO);
+// Duplicates the file descriptor, old and new file descriptors can be used interchangeably.
+void self_dup2(int a, int b){
+    auto result = dup2(a, b);
     assert(result >= 0 , "dup error");
-    closeFile(writeFd);
 }
 
+void redirect(int fd1, int fd2){
+    self_dup2(fd1, fd2);
+    closeFile(fd1);
+}
+
+void redirectInput(int readFd, int currentInFd){
+    redirect(readFd, currentInFd);
+}
+
+void redirectOutput(int writeFd, int currentOutFd){
+    redirect(writeFd, currentOutFd);
+}
+
+// After the call to this, writing to stdout goes to writefd. Writefd can be deleted.
+void redirectStdout(int writeFd){
+    redirectOutput(writeFd, STDOUT_FILENO);
+}
+
+// After the call to this, stdin reads what's been written to readfd. Readfd can be deleted.
 void redirectStdin(int readFd){
-    auto result = dup2(readFd, STDIN_FILENO);
-    assert(result >= 0 , "dup error");
-    closeFile(readFd);
+    redirectInput(readFd, STDIN_FILENO);
 }
 
 void runCommand(char* args[]){
@@ -157,6 +185,109 @@ PipelineArgs getPipeline(parsed_input* parsed_input){
     return result;
 }
 
+void writeToPipe(int writeFd, string& line){
+    auto charPtr = const_cast<char*>(line.c_str());
+    auto count = (int)line.size();
+    auto result = write(writeFd, charPtr, count);
+
+    if(result < 0){
+        fprintf(stderr, "Write failed: %s\n", strerror(errno));
+        assert(false, "pipe-write");
+    }
+}
+
+bool is_closed(int fd) {
+    return fcntl(fd, F_GETFL) == -1;
+}
+
+void runRepeater(parsed_input* input, int repeaterWriteFd, int outputFd){
+    assert(input->separator == SEPARATOR_PARA, "repeater");
+
+    // cout << "RunRepeater" << endl;
+    // We're already forked and piped (previous process is sending input to us)
+
+    auto inputCount = input->num_inputs;
+    auto pipeReadFds = new int[inputCount];
+    auto pipeWriteFds = new int[inputCount];
+
+    for(int i = 0; i < inputCount; i++){
+        pipe(pipeReadFds[i], pipeWriteFds[i]);
+    }
+
+    vector<pid_t> childPids;
+    vector<string> lines;
+    string line;
+    while(getline(cin, line)){
+        lines.push_back(line);
+    }
+
+    auto lineCount = (int)lines.size();
+
+    for(int i = 0; i < inputCount; i++){
+        auto type = input->inputs[i].type;
+        assert(type == INPUT_TYPE_COMMAND, "repeater-2");
+        auto args = input->inputs[i].data.cmd.args;
+
+        pipe(pipeReadFds[i], pipeWriteFds[i]);
+
+        bool isChild;
+        pid_t childPid;
+        fork(isChild, childPid);
+
+        // Rep->A, Rep->B, Rep->C
+        if(isChild){
+            
+            // A, B, C, Receives from Repeater
+            redirectStdin(pipeReadFds[i]);
+
+            // cout << "RunningOnChild" << endl;
+
+            for(int x = i; x >= 0; x--){
+                // It works if I leave it like this, no idea why it works though...
+                closeFile(pipeWriteFds[x]);
+            }
+
+            // cout << "BeforeRunningChildProgram" << endl;
+
+            runCommand(args);
+        } else{
+            // Repeater program
+            childPids.push_back(childPid);
+        }
+    }
+
+    for(int i = 0; i < inputCount; i++){
+        assert(!is_closed(pipeReadFds[i]), "read-end closed");
+        assert(!is_closed(pipeWriteFds[i]), "write-end closed");
+    }
+
+    for(int i = 0; i < inputCount; i++){
+        for(int j = 0; j < lineCount; j++){
+            auto& line = lines[j];
+            // cout << "pipeValue is " << pipeWriteFds[i] << endl ;
+            // cout << "line value is " << line << endl;
+            writeToPipe(pipeWriteFds[i], line);
+        }
+
+        // cout << "sent input to number " << i << endl;
+    }
+
+    // Close files for eof
+    for(int i = 0; i < inputCount; i++){
+        closeFile(pipeWriteFds[i]);
+    }
+
+    auto childCount = (int)childPids.size();
+    for(int i = 0; i < childCount; i++){
+        // cout << "Waiting for child..." << childPids[i] << endl;
+        waitForChildProcess(childPids[i]);
+        // cout << "One child process exited: " << childPids[i] << endl;
+    }
+
+    delete[] pipeReadFds;
+    delete[] pipeWriteFds;
+}
+
 // We alreayd know we're in the pipeline here
 void runPipeline(const PipelineArgs& input)
 {
@@ -216,9 +347,20 @@ void runPipeline(const PipelineArgs& input)
                 // Notice program a doesn't continue after here
                 runCommand(currentCommand.commandArgs.args);
             } else {
+                
                 char* str = currentCommand.subshellArgs.str;
-                runForInput(str);
-                exit(0);
+                auto input = parseInput(str);
+                auto isParallel = input->num_inputs > 1 && input->separator == SEPARATOR_PARA;
+
+                if(isParallel){
+                    auto repeaterStdoutFd = pipeWriteFds[i];
+                    auto nextStdinFd = pipeReadFds[i + 1];
+                    runRepeater(input, repeaterStdoutFd, nextStdinFd);
+                    exit(0);
+                } else{
+                    runForInput(input);
+                    exit(0);
+                }
             }
         } else{
             // cout << "Create Child: " << childPid << endl;
@@ -312,6 +454,19 @@ void runSequential(parsed_input* input){
     // cout << "Sequential Run Done!" << endl;
 }
 
+void runSingleSubshell(char* str){
+    bool isChild;
+    pid_t childPid;
+    fork(isChild, childPid);
+
+    if(isChild){
+        runForInput(parseInput(str));
+        exit(0);
+    } else{
+        waitForChildProcess(childPid);
+    }
+}
+
 void runSingleCommand(parsed_input* input){
     auto type = input->inputs[0].type;
     bool isChild;
@@ -335,24 +490,15 @@ void runNoSeparator(parsed_input* input){
         runSingleCommand(input);
     } else if(type == INPUT_TYPE_SUBSHELL){
         auto& subshell = input->inputs[0].data.subshell;
-        runForInput(subshell);
+        runSingleSubshell(subshell);
+        // runForInput(parseInput(subshell));
     } else{
         assert(false, "unexpected input no separator");
     }
 }
 
-void runForInput(char* str){
-    parsed_input* ptr = (parsed_input*)malloc(sizeof(parsed_input));
-    auto parse_success = parse_line(str, ptr);
-
-    assert(parse_success, "parse error");
-
+void runForInput(parsed_input* ptr){
     // pretty_print(ptr);
-
-    auto inputCount = ptr->num_inputs;
-
-    assert(inputCount > 0, "inputCount");
-
     auto separator = ptr->separator;
 
     switch (separator)
@@ -383,6 +529,8 @@ void runForInput(char* str){
             exit(-1);
         }
     }
+
+    free_parsed_input(ptr);
 }
 
 int main()
@@ -402,7 +550,7 @@ int main()
         // cout << "Running For Input: '" << inputLine << "'" << endl;
 
         auto cPtr = const_cast<char *>(inputLine.c_str());
-        runForInput(cPtr);
+        runForInput(parseInput(cPtr));
         // cout << "Expecting Input." << endl;
 
         cout << "/> ";
