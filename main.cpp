@@ -187,7 +187,10 @@ void writeToPipe(int writeFd, string& line){
     auto count = (int)line.size();
     auto result = write(writeFd, charPtr, count);
 
-    assert(result >= 0, "pipe-write");
+    if(result < 0){
+        fprintf(stderr, "Write failed: %s\n", strerror(errno));
+        assert(false, "pipe-write");
+    }
 }
 
 void runRepeater(parsed_input* input, int repeaterWriteFd, int outputFd){
@@ -210,6 +213,14 @@ void runRepeater(parsed_input* input, int repeaterWriteFd, int outputFd){
 
     cout << "Rep1" << endl;
 
+    vector<string> lines;
+    string line;
+    while(getline(cin, line)){
+        lines.push_back(line);
+    }
+
+    auto lineCount = (int)lines.size();
+
     for(int i = 0; i < inputCount; i++){
         auto type = input->inputs[i].type;
         assert(type == INPUT_TYPE_COMMAND, "repeater-2");
@@ -229,7 +240,11 @@ void runRepeater(parsed_input* input, int repeaterWriteFd, int outputFd){
             // A, B, C, Receives from Repeater
             redirectStdin(pipeReadFds[i]);
 
-            // TODO: Close unused write ends
+            cout << "RunningOnChild" << endl;
+
+            for(int x = i - 1; x >= 0; x--){
+                // closeFile(pipeWriteFds[x]);
+            }
 
             // TODO: Is this thinking right? Should we run in parallel?
             // A, B, C writes to output program, together
@@ -240,6 +255,14 @@ void runRepeater(parsed_input* input, int repeaterWriteFd, int outputFd){
 
             runCommand(args);
         } else{
+            cout << "BeforeWrite!" << endl;
+
+            assert(pipeWriteFds[i] > 0, "asdkjdf");
+
+            for(int i = 0; i < lineCount; i++){
+                writeToPipe(pipeWriteFds[i], line);
+            }
+
             // Repeater program
             childPids.push_back(childPid);
         }
@@ -247,19 +270,11 @@ void runRepeater(parsed_input* input, int repeaterWriteFd, int outputFd){
 
     cout << "Rep3" << endl;
 
-    string line;
-    while(getline(cin, line)){
 
-        cout << "Received Input: " << line << endl;
-        for(int i = 0; i < inputCount; i++){
-            writeToPipe(pipeWriteFds[i], line);
-        }
-    }
 
-    // Close all files
+    // Close files for eof
     for(int i = 0; i < inputCount; i++){
-        closeFile(pipeWriteFds[i]);
-        closeFile(pipeReadFds[i]);
+        // closeFile(pipeWriteFds[i]);
     }
 
     cout << "Rep4" << endl;
@@ -273,8 +288,6 @@ void runRepeater(parsed_input* input, int repeaterWriteFd, int outputFd){
 
     delete[] pipeReadFds;
     delete[] pipeWriteFds;
-
-    cout << "inputcountrepeater" << inputCount << endl;
 }
 
 // We alreayd know we're in the pipeline here
