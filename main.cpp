@@ -26,15 +26,23 @@ struct PipelineArgs {
     int count;
 };
 
-void runForInput(char* str);
-void runSubshell(char* str);
-
 void assert(bool condition, string message){
     if(!condition){
         cout << "ASSERTION FAILED: " << message << endl;
         exit(-1);
     }
 }
+
+parsed_input* parseInput(char* str){
+    parsed_input* ptr = (parsed_input*)malloc(sizeof(parsed_input));
+    auto parse_success = parse_line(str, ptr);
+    assert(parse_success, "parse error");
+    auto inputCount = ptr->num_inputs;
+    assert(inputCount > 0, "inputCount");
+    return ptr;
+}
+
+void runForInput(parsed_input* ptr);
 
 void fork(bool& isChild, pid_t& childPid){
     auto pid = fork();
@@ -217,7 +225,7 @@ void runPipeline(const PipelineArgs& input)
                 runCommand(currentCommand.commandArgs.args);
             } else {
                 char* str = currentCommand.subshellArgs.str;
-                runForInput(str);
+                runForInput(parseInput(str));
                 exit(0);
             }
         } else{
@@ -335,24 +343,13 @@ void runNoSeparator(parsed_input* input){
         runSingleCommand(input);
     } else if(type == INPUT_TYPE_SUBSHELL){
         auto& subshell = input->inputs[0].data.subshell;
-        runForInput(subshell);
+        runForInput(parseInput(subshell));
     } else{
         assert(false, "unexpected input no separator");
     }
 }
 
-parsed_input* parseInput(char* str){
-    parsed_input* ptr = (parsed_input*)malloc(sizeof(parsed_input));
-    auto parse_success = parse_line(str, ptr);
-    assert(parse_success, "parse error");
-    auto inputCount = ptr->num_inputs;
-    assert(inputCount > 0, "inputCount");
-    
-    return ptr;
-}
-
-void runForInput(char* str){
-    auto ptr = parseInput(str);
+void runForInput(parsed_input* ptr){
     // pretty_print(ptr);
     auto separator = ptr->separator;
 
@@ -405,7 +402,7 @@ int main()
         // cout << "Running For Input: '" << inputLine << "'" << endl;
 
         auto cPtr = const_cast<char *>(inputLine.c_str());
-        runForInput(cPtr);
+        runForInput(parseInput(cPtr));
         // cout << "Expecting Input." << endl;
 
         cout << "/> ";
