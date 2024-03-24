@@ -159,16 +159,21 @@ PipelineArgs getPipeline(parsed_input* parsed_input){
 
 void runCommandOrSubshell(CommandSubshellArgs& args){
     if(args.isCommand){
+        // cout << "Running Command [" << args.commandArgs.args[0] << "]" << endl;
         runCommand(args.commandArgs.args);
     } else {
         char* str = args.subshellArgs.str;
-        runSubshell(str);
+        runForInput(str);
+        // cout << "Running Subshell [" << str << "]" << endl;
+        // runSubshell(str);
     }
 }
 
 // We alreayd know we're in the pipeline here
 void runPipeline(const PipelineArgs& input)
 {
+    // cout << "RunPipelineStarted" << endl;
+
     vector<pid_t> childPids;
     auto inputCount = (int)input.count;
 
@@ -243,7 +248,7 @@ void runPipeline(const PipelineArgs& input)
     delete[] pipeWriteFds;
     delete[] pipeReadFds;
 
-    cout << "Pipeline run done!" << endl;     
+    // cout << "Pipeline run done!" << endl;     
 }
 
 void runParallel(parsed_input* input){
@@ -348,7 +353,7 @@ void runForInput(char* str){
 
     assert(parse_success, "parse error");
 
-    pretty_print(ptr);
+    // pretty_print(ptr);
 
     auto inputCount = ptr->num_inputs;
 
@@ -398,7 +403,7 @@ void runSubshell(char* str){
         waitForChildProcess(childPid);
     }
 
-    cout << "Running subshell is done!" << endl;
+    // cout << "Running subshell is done!" << endl;
 }
 
 int main()
@@ -415,7 +420,7 @@ int main()
             continue;
         }
 
-        cout << "Running For Input: '" << inputLine << "'" << endl;
+        // cout << "Running For Input: '" << inputLine << "'" << endl;
 
         auto cPtr = const_cast<char *>(inputLine.c_str());
         runForInput(cPtr);
