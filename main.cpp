@@ -285,7 +285,7 @@ void runParallel(parsed_input* input){
         waitForChildProcess(childPids[i]);
     }
 
-    cout << "Parallel Run Done." << endl;
+    // cout << "Parallel Run Done." << endl;
 }
 
 void runSequential(parsed_input* input){
@@ -294,7 +294,7 @@ void runSequential(parsed_input* input){
     auto inputCount = (int)input->num_inputs;
     assert(inputCount > 1, "numinputs");
 
-    cout << "Sequential Run started." << endl;
+    // cout << "Sequential Run started." << endl;
 
     for(int i = 0; i < inputCount; i++){
         bool isChild;
@@ -318,7 +318,7 @@ void runSequential(parsed_input* input){
         }
     }
 
-    cout << "Sequential Run Done!" << endl;
+    // cout << "Sequential Run Done!" << endl;
 }
 
 void runSingleCommand(parsed_input* input){
