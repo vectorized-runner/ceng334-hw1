@@ -273,6 +273,8 @@ void runRepeater(parsed_input* input){
             writeToPipe(pipeWriteFds[i], line);
         }
 
+        closeFile(pipeWriteFds[i]);
+        waitForChildProcess(childPids[i]);
         // cout << "sent input to number " << i << endl;
     }
 
