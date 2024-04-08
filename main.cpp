@@ -30,9 +30,8 @@ struct PipelineArgs {
 
 void assert(bool condition, string message){
     if(!condition){
-        // Removed for submission
-        // cout << "ASSERTION FAILED: " << message << endl;
-        // exit(-1);
+        cout << "ASSERTION FAILED: " << message << endl;
+        exit(-1);
     }
 }
 
@@ -79,12 +78,10 @@ void waitForChildProcess(pid_t pid){
 
     if(WIFEXITED(status)){
         if(WEXITSTATUS(status) < 0){
-            // Removed for submission
-            // cout << "Child exited with ERROR status: " << WEXITSTATUS(status) << endl;
+            cout << "Child exited with ERROR status: " << WEXITSTATUS(status) << endl;
         }
     } else if(WIFSIGNALED(status)){
-        // Removed for submission
-        // cout << "Child exited with signal: " << WTERMSIG(status) << endl;
+        cout << "Child exited with signal: " << WTERMSIG(status) << endl;
     }
 }
 
