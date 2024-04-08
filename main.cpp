@@ -273,18 +273,20 @@ void runRepeater(parsed_input* input){
             writeToPipe(pipeWriteFds[i], line);
         }
 
+        closeFile(pipeWriteFds[i]);
+        waitForChildProcess(childPids[i]);
         // cout << "sent input to number " << i << endl;
     }
 
     // Close files for eof
     for(int i = 0; i < inputCount; i++){
-        closeFile(pipeWriteFds[i]);
+        // closeFile(pipeWriteFds[i]);
     }
 
     auto childCount = (int)childPids.size();
     for(int i = 0; i < childCount; i++){
         // cout << "Waiting for child..." << childPids[i] << endl;
-        waitForChildProcess(childPids[i]);
+        // waitForChildProcess(childPids[i]);
         // cout << "One child process exited: " << childPids[i] << endl;
     }
 
