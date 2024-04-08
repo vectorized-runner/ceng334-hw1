@@ -190,6 +190,9 @@ void writeToPipe(int writeFd, string& line){
     auto charPtr = const_cast<char*>(line.c_str());
     auto count = (int)line.size();
     auto result = write(writeFd, charPtr, count);
+    char newline[1];
+    newline[0] = '\n'; 
+    write(writeFd, newline, 1);
 
     if(result < 0){
         fprintf(stderr, "Write failed: %s\n", strerror(errno));
